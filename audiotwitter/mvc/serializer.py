@@ -2,38 +2,55 @@ from rest_framework.serializers import ModelSerializer, primaryKeyRelatedField
 from mvc.models import Babble, Comment, Follower, Like, ReBabble, Tag, User
 
 class UserSerializer(ModelSerializer):
-    babbles = primaryKeyRelatedField(many=True, read_only=True)
+    babbles = BabbleSerializer(many=True, read_only=True)
+    reBabbles = ReBabbleSerializer(many=True, read_only=True)
+    likes = LikeSerializer(many=True, read_only=True)
+    followers = FollowerSerializer(many=True, read_only=True)
 
     class Meta:
         model = User
-        fields = ("id", "username", "password", "email", "created", "modified", "avatar", "background", "nickname", "location", "phoneNumber", "gender", "bio", "birthday")
+        fields = '__all__'
+        depth = 1
 
 class BabbleSerializer(ModelSerializer):
+    comments = CommentSerializer(many=True, read_only=True)
+    likes = LikeSerializer(many=True, read_only=True)
+    tags = TagSerializer(many=True, read_only=True)
+    user = UserSerializer(many=False, read_only=True)
+
     class Meta:
         model = Babble
-        fields = ("id", "user", "fileUrl", "created", "modified")
+        fields = '__all__'
+        depth = 1
 
 class ReBabbleSerializer(ModelSerializer):
+    babble = BabbleSerializer(many=False, read_only=True)
+    comments = CommentSerializer(many=True, read_only=True)
+    likes = LikeSerializer(many=True, read_only=True)
+    tags = TagSerializer(many=True, read_only=True)
+    user = UserSerializer(many=False, read_only=True)
     class Meta:
         model = ReBabble
-        fields = ("id", "babble", "user", "created", "modified")
-
+        fields = '__all__'
+        depth = 1
 class CommentSerializer(ModelSerializer):
+    user = UserSerializer(many=False, read_only=True)
     class Meta:
         model = Comment
-        fields = ("id", "user", "babble", "fileUrl", "created", "modified")
+        fields = '__all__'
+        depth = 1
 
 class FollowerSerializer(ModelSerializer):
     class Meta:
         model = Follower
-        fields = ("id", "user", "follower", "created")
+        fields = '__all__'
 
 class LikeSerializer(ModelSerializer):
     class Meta:
         model = Like
-        fields = ("id", "user", "babble", "created")
+        fields = '__all__'
 
 class TagSerializer(ModelSerializer):
     class Meta:
         model = Tag
-        fields = ("id", "babble", "tag", "created")
+        fields = '__all__'
