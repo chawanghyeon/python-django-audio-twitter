@@ -32,7 +32,7 @@ class Babble(models.Model):
 
 class ReBabble(models.Model):
     id = models.IntegerField(primary_key=True)
-    babble = models.ForeignKey(Babble)
+    babble = models.ForeignKey(Babble, on_delete=models.DO_NOTHING)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
@@ -56,11 +56,11 @@ class Comment(models.Model):
 class Follower(models.Model):
     id = models.IntegerField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    follower = models.ForeignKey(User, related_name="follower", on_delete=models.CASCADE)
+    following = models.ForeignKey(User, related_name="following", on_delete=models.CASCADE)
     created = models.DateTimeField(auto_now_add=True)
 
     def __unicode__(self):
-        return self.user.username + " follows " + self.follower.username
+        return self.user.username + " follows " + self.following.username
 
 
 class Like(models.Model):
@@ -75,7 +75,7 @@ class Like(models.Model):
 
 class Tag(models.Model):
     id = models.IntegerField(primary_key=True)
-    babble = models.ForeignKey(Babble)
+    babble = models.ForeignKey(Babble, on_delete=models.DO_NOTHING)
     text = models.CharField(max_length=20)
     crated = models.DateTimeField(auto_now_add=True)
 
