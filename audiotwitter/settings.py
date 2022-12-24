@@ -31,7 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    "audiotwitter.mvc.apps.MvcConfig",
+    "babble.apps.MvcConfig",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
