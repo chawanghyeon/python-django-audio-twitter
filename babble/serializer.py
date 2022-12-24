@@ -1,4 +1,4 @@
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ModelSerializer, StringRelatedField
 from .models import Babble, Comment, Follower, Like, ReBabble, Tag, User
 
 class UserSerializer(ModelSerializer):
@@ -6,23 +6,29 @@ class UserSerializer(ModelSerializer):
         model = User
         fields = '__all__'
         depth = 1
+        exclude = ('password')
 
 class CommentSerializer(ModelSerializer):
-    user = UserSerializer(many=False, read_only=True)
+    user = StringRelatedField(many=False)
     class Meta:
         model = Comment
         fields = '__all__'
         depth = 1
+        exclude = ('babble')
 
 class FollowerSerializer(ModelSerializer):
+    user = StringRelatedField(many=False)
+    following = StringRelatedField(many=False)
     class Meta:
         model = Follower
         fields = '__all__'
 
 class LikeSerializer(ModelSerializer):
+    user = StringRelatedField(many=False)
     class Meta:
         model = Like
         fields = '__all__'
+        exclude = ('babble')
 
 class TagSerializer(ModelSerializer):
     class Meta:
@@ -30,22 +36,14 @@ class TagSerializer(ModelSerializer):
         fields = '__all__'
 
 class BabbleSerializer(ModelSerializer):
-    comments = CommentSerializer(many=True, read_only=True)
-    likes = LikeSerializer(many=True, read_only=True)
-    tags = TagSerializer(many=True, read_only=True)
-    user = UserSerializer(many=False, read_only=True)
-
+    user = StringRelatedField(many=False)
     class Meta:
         model = Babble
         fields = '__all__'
         depth = 1
 
 class ReBabbleSerializer(ModelSerializer):
-    babble = BabbleSerializer(many=False, read_only=True)
-    comments = CommentSerializer(many=True, read_only=True)
-    likes = LikeSerializer(many=True, read_only=True)
-    tags = TagSerializer(many=True, read_only=True)
-    user = UserSerializer(many=False, read_only=True)
+    user = StringRelatedField(many=False)
     class Meta:
         model = ReBabble
         fields = '__all__'

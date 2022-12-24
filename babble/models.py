@@ -16,7 +16,18 @@ class User(models.Model):
     birthday = models.DateTimeField()
 
     def __unicode__(self):
-        return self.username
+        return self.nickname
+
+    def __str__(self):
+        return '%d %s' % (self.nickname, self.avatar)
+
+class Tag(models.Model):
+    id = models.IntegerField(primary_key=True)
+    text = models.CharField(max_length=20)
+    crated = models.DateTimeField(auto_now_add=True)
+
+    def __unicode__(self):
+        return self.text
 
 class Babble(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -24,9 +35,10 @@ class Babble(models.Model):
     fileUrl = models.CharField(max_length=140)
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
+    tags = models.ManyToManyField(Tag)
 
     def __unicode__(self):
-        return self.user.username
+        return self.user.nickname
 
 
 class ReBabble(models.Model):
@@ -38,7 +50,7 @@ class ReBabble(models.Model):
     modified = models.DateTimeField(auto_now=True)
 
     def __unicode__(self):
-        return self.user.username
+        return self.user.nickname
 
 
 class Comment(models.Model):
@@ -50,7 +62,7 @@ class Comment(models.Model):
     modified = models.DateTimeField(auto_now=True)
 
     def __unicode__(self):
-        return self.user.username
+        return self.user.nickname
 
 
 class Follower(models.Model):
@@ -60,7 +72,7 @@ class Follower(models.Model):
     created = models.DateTimeField(auto_now_add=True)
 
     def __unicode__(self):
-        return self.user.username + " follows " + self.following.username
+        return self.user.nickname + " follows " + self.following.nickname
 
 
 class Like(models.Model):
@@ -70,14 +82,6 @@ class Like(models.Model):
     created = models.DateTimeField(auto_now_add=True)
 
     def __unicode__(self):
-        return self.user.username + " likes " + self.babble.text
+        return self.user.nickname + " likes " + self.babble.id
 
 
-class Tag(models.Model):
-    id = models.IntegerField(primary_key=True)
-    babble = models.ForeignKey(Babble, on_delete=models.CASCADE)
-    text = models.CharField(max_length=20)
-    crated = models.DateTimeField(auto_now_add=True)
-
-    def __unicode__(self):
-        return self.text
