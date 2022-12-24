@@ -28,4 +28,5 @@ router.register(r"like", views.LikeViewSet, basename="like")
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path('', include(router.urls)),
 ]

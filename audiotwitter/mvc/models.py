@@ -2,9 +2,8 @@ from django.db import models
 
 class User(models.Model):
     id = models.IntegerField(primary_key=True)
-    username = models.CharField(max_length=20)
+    email = models.EmailField(unique=True)
     password = models.CharField(max_length=20)
-    email = models.EmailField()
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
     avatar = models.CharField(max_length=140)
@@ -34,6 +33,7 @@ class ReBabble(models.Model):
     id = models.IntegerField(primary_key=True)
     babble = models.ForeignKey(Babble, on_delete=models.DO_NOTHING)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    fileUrl = models.CharField(max_length=140)
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
 
@@ -75,7 +75,7 @@ class Like(models.Model):
 
 class Tag(models.Model):
     id = models.IntegerField(primary_key=True)
-    babble = models.ForeignKey(Babble, on_delete=models.DO_NOTHING)
+    babble = models.ForeignKey(Babble, on_delete=models.CASCADE)
     text = models.CharField(max_length=20)
     crated = models.DateTimeField(auto_now_add=True)
 
