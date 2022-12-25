@@ -5,7 +5,7 @@ class User(models.Model):
     password = models.CharField(max_length=20)
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
-    avatar = models.CharField(max_length=140)
+    image = models.ImageField(upload_to="%Y/%m/%d")
     background = models.CharField(max_length=140)
     nickname = models.CharField(max_length=20)
     location = models.CharField(max_length=20)
@@ -33,7 +33,8 @@ class Tag(models.Model):
 class Babble(models.Model):
     id = models.IntegerField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    fileUrl = models.CharField(max_length=140)
+    audio = models.FileField(upload_to="audio/%Y/%m/%d")
+    duration = models.IntegerField()
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
     tags = models.ManyToManyField(Tag)
@@ -46,7 +47,7 @@ class Comment(models.Model):
     id = models.IntegerField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     babble = models.ForeignKey(Babble, on_delete=models.CASCADE)
-    fileUrl = models.CharField(max_length=140)
+    audio = models.FileField(upload_to="audio/%Y/%m/%d")
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
 
@@ -73,4 +74,11 @@ class Like(models.Model):
     def __unicode__(self):
         return self.user.nickname + " likes " + self.babble.id
 
+class Audio(models.Model):
+    id = models.IntegerField(primary_key=True)
+    audio = models.FileField(upload_to="audio/%Y/%m/%d")
+    created = models.DateTimeField(auto_now_add=True)
+    modified = models.DateTimeField(auto_now=True)
 
+    def __unicode__(self):
+        return self.audio

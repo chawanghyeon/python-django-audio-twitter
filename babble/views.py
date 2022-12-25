@@ -1,5 +1,5 @@
-from .serializers import BabbleSerializer, CommentSerializer, FollowerSerializer, LikeSerializer, ReBabbleSerializer, TagSerializer, UserSerializer
-from .models import Babble, Comment, Follower, Like, ReBabble, Tag, User
+from .serializers import *
+from .models import *
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework import status
@@ -9,6 +9,27 @@ from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
 from .permissions import IsOwnerOrReadOnly
+from rest_framework.parsers import FileUploadParser
+import os
+from django.http import FileResponse
+
+class AudioViewSet(viewsets.ModelViewSet):
+    queryset = Audio.objects.all()
+    serializer_class = AudioSerializer
+
+    def create(self, request):
+        request.data['audio'].name = 'done.mp3'
+        serializer = AudioSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'Audio created successfully'})
+
+        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+
+    def retrieve(self, request, pk=None):
+        audio = Audio.objects.get(id=pk)
+        audio.audio.open()
+        return FileResponse(audio.audio, as_attachment=True, filename=audio.audio.name)
 
 # Create your views here.
 class UserViewSet(viewsets.ModelViewSet):
@@ -16,6 +37,7 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
+    parser_classes = [FileUploadParser]
 
     def create(self, request):
         serializer = UserSerializer(data=request.data)
@@ -77,7 +99,6 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response({'message': 'Password changed successfully'})
 
         return Response({'error': 'Wrong password'}, status=status.HTTP_401_UNAUTHORIZED)
-
 
 class BabbleViewSet(viewsets.ModelViewSet):
     queryset = Babble.objects.all()
