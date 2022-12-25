@@ -1,6 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
-class User(AbstractUser):
+class User(models.Model):
     id = models.IntegerField(primary_key=True)
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=20)
@@ -38,22 +37,10 @@ class Babble(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
     tags = models.ManyToManyField(Tag)
+    reBable = models.ForeignKey('self', on_delete=models.CASCADE, null=True)
 
     def __unicode__(self):
         return self.user.nickname
-
-
-class ReBabble(models.Model):
-    id = models.IntegerField(primary_key=True)
-    babble = models.ForeignKey(Babble, on_delete=models.DO_NOTHING)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    fileUrl = models.CharField(max_length=140)
-    created = models.DateTimeField(auto_now_add=True)
-    modified = models.DateTimeField(auto_now=True)
-
-    def __unicode__(self):
-        return self.user.nickname
-
 
 class Comment(models.Model):
     id = models.IntegerField(primary_key=True)

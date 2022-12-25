@@ -1,13 +1,14 @@
 from .serializers import BabbleSerializer, CommentSerializer, FollowerSerializer, LikeSerializer, ReBabbleSerializer, TagSerializer, UserSerializer
 from .models import Babble, Comment, Follower, Like, ReBabble, Tag, User
 from rest_framework import viewsets
-from rest_framework.response import Response, status
+from rest_framework.response import Response
+from rest_framework import status
 from rest_framework.decorators import action
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
-from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated, IsOwnerOrReadOnly
+from rest_framework.permissions import IsAuthenticated
+from .permissions import IsOwnerOrReadOnly
 
 # Create your views here.
 class UserViewSet(viewsets.ModelViewSet):
@@ -16,7 +17,6 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
 
-    @action(detail=True, methods=['post'])
     def create(self, request):
         serializer = UserSerializer(data=request.data)
 
@@ -26,6 +26,26 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response({'message': 'User created successfully'})
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+    
+    def retrieve(self, request, pk=None):
+        user = request.user
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
+
+    def update(self, request, pk=None):
+        user = request.user
+        serializer = UserSerializer(user, data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'User updated successfully'})
+
+        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request):
+        user = request.user
+        user.delete()
+        return Response({'message': 'User deleted successfully'})
 
     @action(detail=True, methods=['post'], url_name='login')
     def login(self, request):
@@ -57,30 +77,6 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response({'message': 'Password changed successfully'})
 
         return Response({'error': 'Wrong password'}, status=status.HTTP_401_UNAUTHORIZED)
-    
-    @action(detail=True, methods=['delete'])
-    def destroy(self, request):
-        user = request.user
-        user.delete()
-        return Response({'message': 'User deleted successfully'})
-
-    @action(detail=True, methods=['get'])
-    def retrieve(self, request, pk=None):
-        user = request.user
-        serializer = UserSerializer(user)
-        return Response(serializer.data)
-    
-    @action(detail=True, methods=['put'])
-    def update(self, request, pk=None):
-        user = request.user
-        serializer = UserSerializer(user, data=request.data)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response({'message': 'User updated successfully'})
-
-        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
-
 
 
 class BabbleViewSet(viewsets.ModelViewSet):
@@ -88,7 +84,6 @@ class BabbleViewSet(viewsets.ModelViewSet):
     serializer_class = BabbleSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
 
-    @action(detail=True, methods=['post'])
     def create(self, request):
         serializer = BabbleSerializer(data=request.data)
 
@@ -98,14 +93,12 @@ class BabbleViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=['get'])
-    def retrieve(self, request, pk):
+    def retrieve(self, request, pk=None):
         babble = Babble.objects.get(pk=pk)
         serializer = BabbleSerializer(babble)
         return Response(serializer.data)
 
-    @action(detail=True, methods=['put'])
-    def update(self, request, pk):
+    def update(self, request, pk=None):
         babble = Babble.objects.get(pk=pk)
         serializer = BabbleSerializer(babble, data=request.data)
 
@@ -115,8 +108,7 @@ class BabbleViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
     
-    @action(detail=True, methods=['delete'])
-    def destroy(self, request, pk):
+    def destroy(self, request, pk=None):
         babble = Babble.objects.get(pk=pk)
         babble.delete()
         return Response({'message': 'Babble deleted successfully'})
@@ -127,64 +119,21 @@ class BabbleViewSet(viewsets.ModelViewSet):
         serializer = BabbleSerializer(babble, many=True)
         return Response(serializer.data)
 
-
-class ReBabbleViewSet(viewsets.ModelViewSet):
-    queryset = ReBabble.objects.all()
-    serializer_class = ReBabbleSerializer
-    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
-
-    @action(detail=True, methods=['post'])
-    def create(self, request):
+    @action(detail=True, methods=['post'], url_name='rebbable', url_path='rebbable')
+    def create_rebabble(self, request):
         serializer = ReBabbleSerializer(data=request.data)
 
         if serializer.is_valid():
             serializer.save()
-            return Response({'message': 'ReBabble created successfully'})
+            return Response({'message': 'Rebabble created successfully'})
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
-
-    @action(detail=True, methods=['get'])
-    def retrieve(self, request, pk):
-        rebabble = ReBabble.objects.get(pk=pk)
-        serializer = ReBabbleSerializer(rebabble)
-        return Response(serializer.data)
-
-    @action(detail=True, methods=['put'])
-    def update(self, request, pk):
-        rebabble = ReBabble.objects.get(pk=pk)
-        serializer = ReBabbleSerializer(rebabble, data=request.data)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response({'message': 'ReBabble updated successfully'})
-
-        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
-
-    @action(detail=True, methods=['delete'])
-    def destroy(self, request, pk):
-        rebabble = ReBabble.objects.get(pk=pk)
-        rebabble.delete()
-        return Response({'message': 'ReBabble deleted successfully'})
-
-    @action(detail=True, methods=['get'])
-    def list(self, request):
-        user = request.user
-        rebabble = ReBabble.objects.filter(user=user)
-        serializer = ReBabbleSerializer(rebabble, many=True)
-        return Response(serializer.data)
-
-    @action(detail=True, methods=['get'])
-    def list_all(self, request):
-        rebabble = ReBabble.objects.all()
-        serializer = ReBabbleSerializer(rebabble, many=True)
-        return Response(serializer.data)
 
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
 
-    @action(detail=True, methods=['post'])
     def create(self, request):
         serializer = CommentSerializer(data=request.data)
 
@@ -194,8 +143,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=['put'])
-    def update(self, request, pk):
+    def update(self, request, pk=None):
         comment = Comment.objects.get(pk=pk)
         serializer = CommentSerializer(comment, data=request.data)
 
@@ -205,13 +153,11 @@ class CommentViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=['delete'])
-    def destroy(self, request, pk):
+    def destroy(self, request, pk=None):
         comment = Comment.objects.get(pk=pk)
         comment.delete()
         return Response({'message': 'Comment deleted successfully'})
 
-    @action(detail=True, methods=['get'])
     def list(self, request):
         user = request.user
         babble = Babble.objects.get(user=user)
@@ -224,7 +170,6 @@ class FollowerViewSet(viewsets.ModelViewSet):
     serializer_class = FollowerSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
 
-    @action(detail=True, methods=['post'])
     def create(self, request):
         serializer = FollowerSerializer(data=request.data)
 
@@ -234,8 +179,7 @@ class FollowerViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=['delete'])
-    def destroy(self, request, pk):
+    def destroy(self, request, pk=None):
         follower = Follower.objects.get(pk=pk)
         follower.delete()
         return Response({'message': 'Follower deleted successfully'})
@@ -259,7 +203,6 @@ class LikeViewSet(viewsets.ModelViewSet):
     serializer_class = LikeSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
 
-    @action(detail=True, methods=['post'])
     def create(self, request):
         serializer = LikeSerializer(data=request.data)
 
@@ -269,8 +212,7 @@ class LikeViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=['delete'])
-    def destroy(self, request, pk):
+    def destroy(self, request, pk=None):
         like = Like.objects.get(pk=pk)
         like.delete()
         return Response({'message': 'Like deleted successfully'})
@@ -280,7 +222,6 @@ class TagViewSet(viewsets.ModelViewSet):
     serializer_class = TagSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
 
-    @action(detail=True, methods=['post'])
     def create(self, request):
         serializer = TagSerializer(data=request.data)
 
@@ -290,14 +231,12 @@ class TagViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=['get'])
-    def retrieve(self, request, pk):
+    def retrieve(self, request, pk=None):
         tag = Tag.objects.get(pk=pk)
         serializer = TagSerializer(tag)
         return Response(serializer.data)
 
-    @action(detail=True, methods=['put'])
-    def update(self, request, pk):
+    def update(self, request, pk=None):
         tag = Tag.objects.get(pk=pk)
         serializer = TagSerializer(tag, data=request.data)
 
@@ -307,24 +246,14 @@ class TagViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=['delete'])
-    def destroy(self, request, pk):
+    def destroy(self, request, pk=None):
         tag = Tag.objects.get(pk=pk)
         tag.delete()
         return Response({'message': 'Tag deleted successfully'})
 
-    @action(detail=True, methods=['get'])
     def list(self, request):
         user = request.user
         tags = Tag.objects.filter(user=user)
-        serializer = TagSerializer(tags, many=True)
-        return Response(serializer.data)
-
-    @action(detail=True, methods=['get'])
-    def list_all(self, request):
-        user = request.user
-        babble = Babble.objects.get(user=user)
-        tags = Tag.objects.filter(babble=babble)
         serializer = TagSerializer(tags, many=True)
         return Response(serializer.data)
 
