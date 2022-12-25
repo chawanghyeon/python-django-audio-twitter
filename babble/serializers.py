@@ -1,13 +1,6 @@
 from rest_framework.serializers import ModelSerializer, StringRelatedField
 from .models import Babble, Comment, Follower, Like, ReBabble, Tag, User
 
-class UserSerializer(ModelSerializer):
-    class Meta:
-        model = User
-        fields = '__all__'
-        depth = 1
-        exclude = ('password')
-
 class CommentSerializer(ModelSerializer):
     user = StringRelatedField(many=False)
     class Meta:
@@ -48,3 +41,13 @@ class ReBabbleSerializer(ModelSerializer):
         model = ReBabble
         fields = '__all__'
         depth = 1
+
+class UserSerializer(ModelSerializer):
+    babbles = BabbleSerializer(many=True, read_only=True)
+    reBabbles = ReBabbleSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = User
+        fields = '__all__'
+        depth = 1
+        exclude = ('password')
