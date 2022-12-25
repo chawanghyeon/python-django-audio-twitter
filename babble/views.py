@@ -188,10 +188,88 @@ class ReBabbleViewSet(viewsets.ModelViewSet):
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticated]
+
+    @action(detail=True, methods=['post'])
+    def create(self, request):
+        serializer = CommentSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'Comment created successfully'})
+
+        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['get'])
+    def retrieve(self, request, pk=None):
+        comment = Comment.objects.get(pk=pk)
+        serializer = CommentSerializer(comment)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['put'])
+    def update(self, request, pk=None):
+        comment = Comment.objects.get(pk=pk)
+        serializer = CommentSerializer(comment, data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'Comment updated successfully'})
+
+        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['delete'])
+    def destroy(self, request, pk=None):
+        comment = Comment.objects.get(pk=pk)
+        comment.delete()
+        return Response({'message': 'Comment deleted successfully'})
+
+    @action(detail=True, methods=['get'])
+    def list(self, request):
+        user = request.user
+        comment = Comment.objects.filter(user=user)
+        serializer = CommentSerializer(comment, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def list_all(self, request):
+        comment = Comment.objects.all()
+        serializer = CommentSerializer(comment, many=True)
+        return Response(serializer.data)
 
 class FollowerViewSet(viewsets.ModelViewSet):
     queryset = Follower.objects.all()
     serializer_class = FollowerSerializer
+    permission_classes = [IsAuthenticated]
+
+    @action(detail=True, methods=['post'])
+    def create(self, request):
+        serializer = FollowerSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'Follower created successfully'})
+
+        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['delete'])
+    def destroy(self, request, pk=None):
+        follower = Follower.objects.get(pk=pk)
+        follower.delete()
+        return Response({'message': 'Follower deleted successfully'})
+
+    @action(detail=True, methods=['get'])
+    def get_followings(self, request):
+        user = request.user
+        follower = Follower.objects.filter(user=user)
+        serializer = FollowerSerializer(follower, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def get_followers(self, request):
+        user = request.user
+        follower = Follower.objects.filter(following=user)
+        serializer = FollowerSerializer(follower, many=True)
+        return Response(serializer.data)
 
 class LikeViewSet(viewsets.ModelViewSet):
     queryset = Like.objects.all()
