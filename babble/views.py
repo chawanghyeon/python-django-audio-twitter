@@ -85,6 +85,54 @@ class UserViewSet(viewsets.ModelViewSet):
 class BabbleViewSet(viewsets.ModelViewSet):
     queryset = Babble.objects.all()
     serializer_class = BabbleSerializer
+    permission_classes = [IsAuthenticated]
+
+    @action(detail=True, methods=['post'])
+    def create(self, request):
+        serializer = BabbleSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'Babble created successfully'})
+
+        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['get'])
+    def retrieve(self, request, pk=None):
+        babble = Babble.objects.get(pk=pk)
+        serializer = BabbleSerializer(babble)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['put'])
+    def update(self, request, pk=None):
+        babble = Babble.objects.get(pk=pk)
+        serializer = BabbleSerializer(babble, data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'Babble updated successfully'})
+
+        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=True, methods=['delete'])
+    def destroy(self, request, pk=None):
+        babble = Babble.objects.get(pk=pk)
+        babble.delete()
+        return Response({'message': 'Babble deleted successfully'})
+    
+    @action(detail=True, methods=['get'])
+    def list(self, request):
+        user = request.user
+        babble = Babble.objects.filter(user=user)
+        serializer = BabbleSerializer(babble, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def list_all(self, request):
+        babble = Babble.objects.all()
+        serializer = BabbleSerializer(babble, many=True)
+        return Response(serializer.data)
+
 
 class ReBabbleViewSet(viewsets.ModelViewSet):
     queryset = ReBabble.objects.all()
