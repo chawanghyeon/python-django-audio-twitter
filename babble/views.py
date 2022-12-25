@@ -137,6 +137,53 @@ class BabbleViewSet(viewsets.ModelViewSet):
 class ReBabbleViewSet(viewsets.ModelViewSet):
     queryset = ReBabble.objects.all()
     serializer_class = ReBabbleSerializer
+    permission_classes = [IsAuthenticated]
+
+    @action(detail=True, methods=['post'])
+    def create(self, request):
+        serializer = ReBabbleSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'ReBabble created successfully'})
+
+        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['get'])
+    def retrieve(self, request, pk=None):
+        rebabble = ReBabble.objects.get(pk=pk)
+        serializer = ReBabbleSerializer(rebabble)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['put'])
+    def update(self, request, pk=None):
+        rebabble = ReBabble.objects.get(pk=pk)
+        serializer = ReBabbleSerializer(rebabble, data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'ReBabble updated successfully'})
+
+        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['delete'])
+    def destroy(self, request, pk=None):
+        rebabble = ReBabble.objects.get(pk=pk)
+        rebabble.delete()
+        return Response({'message': 'ReBabble deleted successfully'})
+
+    @action(detail=True, methods=['get'])
+    def list(self, request):
+        user = request.user
+        rebabble = ReBabble.objects.filter(user=user)
+        serializer = ReBabbleSerializer(rebabble, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def list_all(self, request):
+        rebabble = ReBabble.objects.all()
+        serializer = ReBabbleSerializer(rebabble, many=True)
+        return Response(serializer.data)
 
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
