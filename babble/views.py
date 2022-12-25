@@ -274,6 +274,23 @@ class FollowerViewSet(viewsets.ModelViewSet):
 class LikeViewSet(viewsets.ModelViewSet):
     queryset = Like.objects.all()
     serializer_class = LikeSerializer
+    permission_classes = [IsAuthenticated]
+
+    @action(detail=True, methods=['post'])
+    def create(self, request):
+        serializer = LikeSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'Like created successfully'})
+
+        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['delete'])
+    def destroy(self, request, pk=None):
+        like = Like.objects.get(pk=pk)
+        like.delete()
+        return Response({'message': 'Like deleted successfully'})
 
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
