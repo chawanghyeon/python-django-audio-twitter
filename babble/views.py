@@ -17,6 +17,7 @@ class AudioViewSet(viewsets.ModelViewSet):
     queryset = Audio.objects.all()
     serializer_class = AudioSerializer
 
+    #쪼개서 보내기 구현
     def create(self, request):
         request.data['audio'].name = 'done.mp3'
         serializer = AudioSerializer(data=request.data)
