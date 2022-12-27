@@ -1,43 +1,14 @@
-# from transformers import ElectraTokenizer, ElectraForSequenceClassification, pipeline
-# import torch
+from transformers import ElectraTokenizer, ElectraForSequenceClassification, pipeline
 
+model_name = "monologg/koelectra-base-finetuned-nsmc"
+tokenizer = ElectraTokenizer.from_pretrained(model_name)
+model = ElectraForSequenceClassification.from_pretrained(model_name)
 
-# device = torch.device("cuda")
-# model = ElectraForSequenceClassification.from_pretrained("monologg/koelectra-base-v3-discriminator").to("cuda")
-# tokenizer = ElectraTokenizer.from_pretrained("monologg/koelectra-base-v3-discriminator")
+nsmc = pipeline(
+    "sentiment-analysis",
+    tokenizer=tokenizer,
+    model=model
+)
 
-# nlp = pipeline("text-classification", model=model, tokenizer=tokenizer)
-
-
-# print(nlp("이 영화는 정말 재미없었다."))
-# print(nlp("이 영화는 정말 재미있었다."))
-
-
-import torch
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
-
-# model_name = "jason9693/koelectra-base-v3-discriminator-apeach"
-# model_name = "monologg/koelectra-base-v3-discriminator"
-model_name = "skt/kogpt2-base-v2"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForSequenceClassification.from_pretrained(model_name)
-
-# set device
-# device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-# print("device:", device)
-# model.to(device)
-
-nlp = pipeline("text-classification", model=model, tokenizer=tokenizer)
-print(nlp("이 영화는 정말 재미없었다."))
-print(nlp("이 영화는 정말 재미있었다."))
-
-# from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
-# import torch
-
-# tokenizer = AutoTokenizer.from_pretrained("skt/kogpt2-base-v2")
-# model = AutoModelForSequenceClassification.from_pretrained("skt/kogpt2-base-v2")
-# device = torch.device("cuda")
-# model.to(device)
-# pipe = pipeline("text-classification", model=model, tokenizer=tokenizer)
-
-# print(pipe("이 영화는 정말 재미없었다."))
+print(nsmc("이 영화는 미쳤다. 넷플릭스가 일상화된 시대에 극장이 존재해야하는 이유를 증명해준다."))
+print(nsmc("와 진짜 너무 재미없네요는 뻥이고 진짜 너무 재밌어요"))
