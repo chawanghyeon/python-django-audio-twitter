@@ -106,6 +106,7 @@ class BabbleViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
 
     def create(self, request):
+        request.data['audio'].name = '%Y/%m/%d'
         serializer = BabbleSerializer(data=request.data)
 
         if serializer.is_valid():
@@ -116,11 +117,12 @@ class BabbleViewSet(viewsets.ModelViewSet):
 
     def retrieve(self, request, pk=None):
         babble = Babble.objects.get(pk=pk)
-        serializer = BabbleSerializer(babble)
-        return Response(serializer.data)
+        babble.audio.open()
+        return FileResponse(babble.audio, as_attachment=True, filename=babble.audio.name)
 
     def update(self, request, pk=None):
         babble = Babble.objects.get(pk=pk)
+        request.data['audio'].name = '%Y/%m/%d'
         serializer = BabbleSerializer(babble, data=request.data)
 
         if serializer.is_valid():
@@ -156,6 +158,7 @@ class CommentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
 
     def create(self, request):
+        request.data['audio'].name = '%Y/%m/%d'
         serializer = CommentSerializer(data=request.data)
 
         if serializer.is_valid():
@@ -166,6 +169,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def update(self, request, pk=None):
         comment = Comment.objects.get(pk=pk)
+        request.data['audio'].name = '%Y/%m/%d'
         serializer = CommentSerializer(comment, data=request.data)
 
         if serializer.is_valid():
@@ -185,6 +189,11 @@ class CommentViewSet(viewsets.ModelViewSet):
         comments = Comment.objects.filter(babble=babble)
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data)
+
+    def retrieve(self, request, pk=None):
+        comment = Comment.objects.get(pk=pk)
+        comment.audio.open()
+        return FileResponse(comment.audio, as_attachment=True, filename=comment.audio.name) 
 
 class FollowerViewSet(viewsets.ModelViewSet):
     queryset = Follower.objects.all()

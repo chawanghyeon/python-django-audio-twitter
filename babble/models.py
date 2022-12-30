@@ -43,15 +43,6 @@ class Babble(models.Model):
     def __unicode__(self):
         return self.user.nickname
 
-class Audio(models.Model):
-    id = models.IntegerField(primary_key=True)
-    audio = models.FileField(upload_to="audio/%Y/%m/%d")
-    created = models.DateTimeField(auto_now_add=True)
-    modified = models.DateTimeField(auto_now=True)
-
-    def __unicode__(self):
-        return self.audio
-
 class Comment(models.Model):
     id = models.IntegerField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)

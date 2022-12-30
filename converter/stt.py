@@ -1,6 +1,6 @@
 import whisper
 
-model = whisper.load_model("large")
+model = whisper.load_model("small", device="cpu")
 
 # # load audio and pad/trim it to fit 30 seconds
 # audio = whisper.load_audio("done.wav")
@@ -20,7 +20,7 @@ model = whisper.load_model("large")
 # # print the recognized text
 # print(result.text)
 
-result = model.transcribe("test.mp3")
+result = model.transcribe("test.mp3", fp16=False)
 print(result["text"])
 
 from transformers import ElectraTokenizer, ElectraForSequenceClassification, pipeline
