@@ -13,25 +13,6 @@ from rest_framework.parsers import FileUploadParser
 import os
 from django.http import FileResponse
 
-class AudioViewSet(viewsets.ModelViewSet):
-    queryset = Audio.objects.all()
-    serializer_class = AudioSerializer
-
-    def create(self, request):
-        request.data['audio'].name = 'done.mp3'
-        serializer = AudioSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({'message': 'Audio created successfully'})
-
-        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
-
-    def retrieve(self, request, pk=None):
-        audio = Audio.objects.get(id=pk)
-        audio.audio.open()
-        return FileResponse(audio.audio, as_attachment=True, filename=audio.audio.name)
-
-# Create your views here.
 class UserViewSet(viewsets.ModelViewSet):
 
     queryset = User.objects.all()
