@@ -36,8 +36,8 @@ class BabbleSerializer(ModelSerializer):
         depth = 1
 
 class UserSerializer(ModelSerializer):
-    babbles = BabbleSerializer(many=True, read_only=True)
-    password = CharField(write_only=True)
+    babbles = BabbleSerializer(many=True, read_only=True, required=False)
+    password = CharField(write_only=True, required=False)
 
     class Meta:
         fields = '__all__'
