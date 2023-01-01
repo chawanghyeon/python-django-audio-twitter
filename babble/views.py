@@ -9,7 +9,7 @@ from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
 from .permissions import IsOwnerOrReadOnly
-from rest_framework.parsers import FileUploadParser
+from rest_framework.parsers import FileUploadParser, MultiPartParser
 import os
 from django.http import FileResponse
 
@@ -17,28 +17,26 @@ class UserViewSet(viewsets.ModelViewSet):
 
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
-    parser_classes = [FileUploadParser]
-
-    def create(self, request):
-        serializer = self.serializer_class(data=request.data)
-
-        if serializer.is_valid():
-            serializer.password = make_password(serializer.password)
-            serializer.save()
-            return Response({'message': 'User created successfully'}, status=status.HTTP_201_CREATED)
-
-        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+    permission_classes = (IsAuthenticated, IsOwnerOrReadOnly)
+    parser_classes = (MultiPartParser,)
     
     def retrieve(self, request, pk=None):
-        user = request.user
-        user2 = User.objects.get(pk=pk)
-        serializer = self.serializer_class(user)
-        return Response(serializer.data)
+        if pk is None:
+            user = request.user
+        else:
+            user = User.objects.get(pk=pk)
 
-    def update(self, request, pk=None):
-        user = request.user
-        serializer = UserSerializer(user, data=request.data)
+        if user:
+            serializer = UserSerializer(user)
+            return Response(serializer.data)
+        
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def update(self, request):
+        if request.data.image:
+            request.data.image.name = request.user.id + '-' + '%y%m%d'
+            
+        serializer = UserSerializer(request.user, data=request.data)
 
         if serializer.is_valid():
             serializer.save()
@@ -48,18 +46,27 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request):
         check = authenticate(username=request.user.username, password=request.data.get('password'))
+
         if check:
             request.user.delete()
             return Response({'message': 'User deleted successfully'}, status=status.HTTP_200_OK)
 
         return Response({'error': 'Wrong password'}, status=status.HTTP_401_UNAUTHORIZED)
 
-    @action(detail=True, methods=['post'], url_name='login')
-    def login(self, request):
-        username = request.data.get('username')
-        password = request.data.get('password')
+    @action(detail=True, methods=['post'], url_name='signup')
+    def signup(self, request):
+        serializer = UserSerializer(data=request.data)
 
-        user = authenticate(username=username, password=password)
+        if serializer.is_valid():
+            serializer.password = make_password(serializer.password)
+            serializer.save()
+            return Response({'message': 'User created successfully'}, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'], url_name='signin')
+    def signin(self, request):
+        user = authenticate(username=request.data.get('username'), password=request.data.get('password'))
 
         if user:
             token, _ = Token.objects.get_or_create(user=user)
@@ -72,16 +79,14 @@ class UserViewSet(viewsets.ModelViewSet):
         request.user.auth_token.delete()
         return Response({'message': 'Logged out successfully'}, status=status.HTTP_200_OK)
     
-    @action(detail=True, methods=['post'], url_name='change_password')
-    def change_password(self, request):
+    @action(detail=True, methods=['post'], url_name='password')
+    def update_password(self, request):
         user = request.user
-        old_password = request.data.get('old_password')
-        new_password = request.data.get('new_password')
 
-        if user.check_password(old_password):
-            user.password = make_password(new_password)
+        if user.check_password(request.data.get('old_password')):
+            user.password = make_password(request.data.get('new_password'))
             user.save()
-            return Response({'message': 'Password changed successfully'},)
+            return Response({'message': 'Password updated successfully'}, status=status.HTTP_200_OK)
 
         return Response({'error': 'Wrong password'}, status=status.HTTP_401_UNAUTHORIZED)
 
