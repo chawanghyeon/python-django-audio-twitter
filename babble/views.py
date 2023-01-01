@@ -21,18 +21,19 @@ class UserViewSet(viewsets.ModelViewSet):
     parser_classes = [FileUploadParser]
 
     def create(self, request):
-        serializer = UserSerializer(data=request.data)
+        serializer = self.serializer_class(data=request.data)
 
         if serializer.is_valid():
             serializer.password = make_password(serializer.password)
             serializer.save()
-            return Response({'message': 'User created successfully'})
+            return Response({'message': 'User created successfully'}, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
     
     def retrieve(self, request, pk=None):
         user = request.user
-        serializer = UserSerializer(user)
+        user2 = User.objects.get(pk=pk)
+        serializer = self.serializer_class(user)
         return Response(serializer.data)
 
     def update(self, request, pk=None):
@@ -41,14 +42,17 @@ class UserViewSet(viewsets.ModelViewSet):
 
         if serializer.is_valid():
             serializer.save()
-            return Response({'message': 'User updated successfully'})
+            return Response({'message': 'User updated successfully'}, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
     def destroy(self, request):
-        user = request.user
-        user.delete()
-        return Response({'message': 'User deleted successfully'})
+        check = authenticate(username=request.user.username, password=request.data.get('password'))
+        if check:
+            request.user.delete()
+            return Response({'message': 'User deleted successfully'}, status=status.HTTP_200_OK)
+
+        return Response({'error': 'Wrong password'}, status=status.HTTP_401_UNAUTHORIZED)
 
     @action(detail=True, methods=['post'], url_name='login')
     def login(self, request):
@@ -59,14 +63,14 @@ class UserViewSet(viewsets.ModelViewSet):
 
         if user:
             token, _ = Token.objects.get_or_create(user=user)
-            return Response({'token': token.key})
+            return Response({'token': token.key}, status=status.HTTP_200_OK)
 
         return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
     
     @action(detail=True, methods=['post'], url_name='logout')
     def logout(self, request):
         request.user.auth_token.delete()
-        return Response({'message': 'Logged out successfully'})
+        return Response({'message': 'Logged out successfully'}, status=status.HTTP_200_OK)
     
     @action(detail=True, methods=['post'], url_name='change_password')
     def change_password(self, request):
@@ -77,14 +81,16 @@ class UserViewSet(viewsets.ModelViewSet):
         if user.check_password(old_password):
             user.password = make_password(new_password)
             user.save()
-            return Response({'message': 'Password changed successfully'})
+            return Response({'message': 'Password changed successfully'},)
 
         return Response({'error': 'Wrong password'}, status=status.HTTP_401_UNAUTHORIZED)
 
 class BabbleViewSet(viewsets.ModelViewSet):
+
     queryset = Babble.objects.all()
     serializer_class = BabbleSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
+    parser_classes = [FileUploadParser]
 
     def create(self, request):
         request.data['audio'].name = '%Y/%m/%d'
@@ -134,9 +140,11 @@ class BabbleViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
 class CommentViewSet(viewsets.ModelViewSet):
+
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
+    parser_classes = [FileUploadParser]
 
     def create(self, request):
         request.data['audio'].name = '%Y/%m/%d'
@@ -177,6 +185,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         return FileResponse(comment.audio, as_attachment=True, filename=comment.audio.name) 
 
 class FollowerViewSet(viewsets.ModelViewSet):
+
     queryset = Follower.objects.all()
     serializer_class = FollowerSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
@@ -210,6 +219,7 @@ class FollowerViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 class LikeViewSet(viewsets.ModelViewSet):
+
     queryset = Like.objects.all()
     serializer_class = LikeSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
@@ -229,6 +239,7 @@ class LikeViewSet(viewsets.ModelViewSet):
         return Response({'message': 'Like deleted successfully'})
 
 class TagViewSet(viewsets.ModelViewSet):
+
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]

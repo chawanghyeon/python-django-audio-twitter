@@ -5,7 +5,7 @@ class User(models.Model):
     password = models.CharField(max_length=20)
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
-    image = models.ImageField(upload_to="%Y/%m/%d")
+    image = models.ImageField(upload_to="image/%Y/%m/%d")
     background = models.CharField(max_length=140)
     nickname = models.CharField(max_length=20)
     location = models.CharField(max_length=20)
