@@ -1,8 +1,7 @@
 from .serializers import *
 from .models import *
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.response import Response
-from rest_framework import status
 from rest_framework.decorators import action
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import authenticate
@@ -207,21 +206,20 @@ class LikeViewSet(viewsets.ModelViewSet):
 
     queryset = Like.objects.all()
     serializer_class = LikeSerializer
-    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
+    permission_classes = (IsAuthenticated, IsOwnerOrReadOnly)
 
     def create(self, request):
         serializer = LikeSerializer(data=request.data)
 
         if serializer.is_valid():
             serializer.save()
-            return Response({'message': 'Like created successfully'})
+            return Response({'message': 'Like created successfully'}, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
-    def destroy(self, request, pk=None):
-        like = Like.objects.get(pk=pk)
-        like.delete()
-        return Response({'message': 'Like deleted successfully'})
+    def destroy(self, pk=None):
+        get_object_or_404(Like, pk=pk).delete()
+        return Response({'message': 'Like deleted successfully'}, status=status.HTTP_200_OK)
 
 class TagViewSet(viewsets.ModelViewSet):
 
