@@ -176,35 +176,32 @@ class FollowerViewSet(viewsets.ModelViewSet):
 
     queryset = Follower.objects.all()
     serializer_class = FollowerSerializer
-    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
+    permission_classes = (IsAuthenticated, IsOwnerOrReadOnly)
 
     def create(self, request):
         serializer = FollowerSerializer(data=request.data)
 
         if serializer.is_valid():
             serializer.save()
-            return Response({'message': 'Follower created successfully'})
+            return Response({'message': 'Follower created successfully'}, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
-    def destroy(self, request, pk=None):
-        follower = Follower.objects.get(pk=pk)
-        follower.delete()
-        return Response({'message': 'Follower deleted successfully'})
+    def destroy(self, pk=None):
+        get_object_or_404(Follower, pk=pk).delete()
+        return Response({'message': 'Follower deleted successfully'}, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=['get'], url_path='followings')
     def get_followings(self, request):
-        user = request.user
-        follower = Follower.objects.filter(user=user)
+        follower = get_list_or_404(Follower, follower=request.user)
         serializer = FollowerSerializer(follower, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=['get'], url_path='followers')
     def get_followers(self, request):
-        user = request.user
-        follower = Follower.objects.filter(following=user)
+        follower = get_list_or_404(Follower, following=request.user)
         serializer = FollowerSerializer(follower, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 class LikeViewSet(viewsets.ModelViewSet):
 
