@@ -9,9 +9,9 @@ from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
 from .permissions import IsOwnerOrReadOnly
-from rest_framework.parsers import FileUploadParser, MultiPartParser
+from rest_framework.parsers import MultiPartParser
 from django.http import FileResponse
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, get_list_or_404
 
 class UserViewSet(viewsets.ModelViewSet):
 
@@ -100,7 +100,7 @@ class BabbleViewSet(viewsets.ModelViewSet):
     def create(self, request):
         request.data['audio'].name = request.user.id + '-' + '%y%m%d'
         serializer = BabbleSerializer(data=request.data)
-
+        # 오디오 분석 기능 추가
         if serializer.is_valid():
             serializer.save()
             return Response({'message': 'Babble created successfully'}, status=status.HTTP_201_CREATED)
@@ -110,68 +110,67 @@ class BabbleViewSet(viewsets.ModelViewSet):
     def retrieve(self, pk=None):
         babble = get_object_or_404(Babble, pk=pk)
         babble.audio.open()
-        return FileResponse(babble.audio, as_attachment=True, filename=babble.audio.name)
+        return FileResponse(babble.audio, as_attachment=True, filename=babble.audio.name, status=status.HTTP_200_OK)
 
     def update(self, request, pk=None):
+        # 오디오 분석 기능 추가
         babble = get_object_or_404(Babble, pk=pk)
         request.data['audio'].name = request.user.id + '-' + '%y%m%d'
         serializer = BabbleSerializer(babble, data=request.data)
 
         if serializer.is_valid():
             serializer.save()
-            return Response({'message': 'Babble updated successfully'})
+            return Response({'message': 'Babble updated successfully'}, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
     
     def destroy(self, pk=None):
-        babble = get_object_or_404(Babble, pk=pk)
-        babble.delete()
-        return Response({'message': 'Babble deleted successfully'})
+        get_object_or_404(Babble, pk=pk).delete()
+        return Response({'message': 'Babble deleted successfully'}, status=status.HTTP_200_OK)
 
 class CommentViewSet(viewsets.ModelViewSet):
 
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
-    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
-    parser_classes = [FileUploadParser]
+    permission_classes = (IsAuthenticated, IsOwnerOrReadOnly)
+    parser_classes = (MultiPartParser,)
 
     def create(self, request):
-        request.data['audio'].name = '%Y/%m/%d'
+        request.data['audio'].name = request.user.id + '-' + '%y%m%d'
         serializer = CommentSerializer(data=request.data)
-
+        # 오디오 분석 기능 추가
         if serializer.is_valid():
             serializer.save()
-            return Response({'message': 'Comment created successfully'})
+            return Response({'message': 'Comment created successfully'}, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, pk=None):
-        comment = Comment.objects.get(pk=pk)
-        request.data['audio'].name = '%Y/%m/%d'
+        # 오디오 분석 기능 추가
+        comment = get_object_or_404(Comment, pk=pk)
+        request.data['audio'].name = request.user.id + '-' + '%y%m%d'
         serializer = CommentSerializer(comment, data=request.data)
 
         if serializer.is_valid():
             serializer.save()
-            return Response({'message': 'Comment updated successfully'})
+            return Response({'message': 'Comment updated successfully'}, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
-    def destroy(self, request, pk=None):
-        comment = Comment.objects.get(pk=pk)
-        comment.delete()
-        return Response({'message': 'Comment deleted successfully'})
+    def destroy(self, pk=None):
+        get_object_or_404(Comment, pk=pk).delete()
+        return Response({'message': 'Comment deleted successfully'}, status=status.HTTP_200_OK)
 
     def list(self, request):
-        user = request.user
-        babble = Babble.objects.get(user=user)
-        comments = Comment.objects.filter(babble=babble)
+        babble = Babble.objects.get(user=request.user)
+        comments = get_list_or_404(Comment, babble=babble)
         serializer = CommentSerializer(comments, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def retrieve(self, request, pk=None):
-        comment = Comment.objects.get(pk=pk)
+    def retrieve(self, pk=None):
+        comment = get_object_or_404(Comment, pk=pk)
         comment.audio.open()
-        return FileResponse(comment.audio, as_attachment=True, filename=comment.audio.name) 
+        return FileResponse(comment.audio, as_attachment=True, filename=comment.audio.name, status=status.HTTP_200_OK)
 
 class FollowerViewSet(viewsets.ModelViewSet):
 
