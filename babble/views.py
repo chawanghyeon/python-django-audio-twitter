@@ -225,42 +225,4 @@ class TagViewSet(viewsets.ModelViewSet):
 
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
-
-    def create(self, request):
-        serializer = TagSerializer(data=request.data)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response({'message': 'Tag created successfully'})
-
-        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
-
-    def retrieve(self, request, pk=None):
-        tag = Tag.objects.get(pk=pk)
-        serializer = TagSerializer(tag)
-        return Response(serializer.data)
-
-    def update(self, request, pk=None):
-        tag = Tag.objects.get(pk=pk)
-        serializer = TagSerializer(tag, data=request.data)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response({'message': 'Tag updated successfully'})
-
-        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
-
-    def destroy(self, request, pk=None):
-        tag = Tag.objects.get(pk=pk)
-        tag.delete()
-        return Response({'message': 'Tag deleted successfully'})
-
-    def list(self, request):
-        user = request.user
-        tags = Tag.objects.filter(user=user)
-        serializer = TagSerializer(tags, many=True)
-        return Response(serializer.data)
-
-
-# Path: python-django-audio-twitter\audiotwitter\audiotwitter\urls.py
+    permission_classes = (IsAuthenticated, IsOwnerOrReadOnly)
