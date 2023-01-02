@@ -10,8 +10,8 @@ from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
 from .permissions import IsOwnerOrReadOnly
 from rest_framework.parsers import FileUploadParser, MultiPartParser
-import os
 from django.http import FileResponse
+from django.shortcuts import get_object_or_404
 
 class UserViewSet(viewsets.ModelViewSet):
 
@@ -24,7 +24,7 @@ class UserViewSet(viewsets.ModelViewSet):
         if pk is None:
             user = request.user
         else:
-            user = User.objects.get(pk=pk)
+            user = get_object_or_404(User, pk=pk)
 
         if user:
             serializer = UserSerializer(user)
@@ -35,7 +35,7 @@ class UserViewSet(viewsets.ModelViewSet):
     def update(self, request):
         if request.data.image:
             request.data.image.name = request.user.id + '-' + '%y%m%d'
-            
+
         serializer = UserSerializer(request.user, data=request.data)
 
         if serializer.is_valid():
@@ -94,27 +94,27 @@ class BabbleViewSet(viewsets.ModelViewSet):
 
     queryset = Babble.objects.all()
     serializer_class = BabbleSerializer
-    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
-    parser_classes = [FileUploadParser]
+    permission_classes = (IsAuthenticated, IsOwnerOrReadOnly)
+    parser_classes = (MultiPartParser,)
 
     def create(self, request):
-        request.data['audio'].name = '%Y/%m/%d'
+        request.data['audio'].name = request.user.id + '-' + '%y%m%d'
         serializer = BabbleSerializer(data=request.data)
 
         if serializer.is_valid():
             serializer.save()
-            return Response({'message': 'Babble created successfully'})
+            return Response({'message': 'Babble created successfully'}, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
-    def retrieve(self, request, pk=None):
-        babble = Babble.objects.get(pk=pk)
+    def retrieve(self, pk=None):
+        babble = get_object_or_404(Babble, pk=pk)
         babble.audio.open()
         return FileResponse(babble.audio, as_attachment=True, filename=babble.audio.name)
 
     def update(self, request, pk=None):
-        babble = Babble.objects.get(pk=pk)
-        request.data['audio'].name = '%Y/%m/%d'
+        babble = get_object_or_404(Babble, pk=pk)
+        request.data['audio'].name = request.user.id + '-' + '%y%m%d'
         serializer = BabbleSerializer(babble, data=request.data)
 
         if serializer.is_valid():
@@ -123,26 +123,10 @@ class BabbleViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
     
-    def destroy(self, request, pk=None):
-        babble = Babble.objects.get(pk=pk)
+    def destroy(self, pk=None):
+        babble = get_object_or_404(Babble, pk=pk)
         babble.delete()
         return Response({'message': 'Babble deleted successfully'})
-
-    @action(detail=True, methods=['get'])
-    def list_all(self, request):
-        babble = Babble.objects.all()
-        serializer = BabbleSerializer(babble, many=True)
-        return Response(serializer.data)
-
-    @action(detail=True, methods=['post'], url_name='rebbable', url_path='rebbable')
-    def create_rebabble(self, request):
-        serializer = ReBabbleSerializer(data=request.data)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response({'message': 'Rebabble created successfully'})
-
-        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
 class CommentViewSet(viewsets.ModelViewSet):
 
