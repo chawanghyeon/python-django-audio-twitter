@@ -11,6 +11,14 @@ from .permissions import IsOwnerOrReadOnly
 from rest_framework.parsers import MultiPartParser
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404, get_list_or_404
+from .stt import STT
+
+stt = STT()
+try:
+    stt.run()
+except:
+    stt = STT()
+    stt.run()
 
 class UserViewSet(viewsets.ModelViewSet):
 
