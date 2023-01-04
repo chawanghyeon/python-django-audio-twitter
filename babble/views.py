@@ -15,10 +15,11 @@ from .stt import STT
 
 stt = STT()
 try:
-    stt.run()
+    stt.start()
 except:
+    stt.join()
     stt = STT()
-    stt.run()
+    stt.start()
 
 class UserViewSet(viewsets.ModelViewSet):
 

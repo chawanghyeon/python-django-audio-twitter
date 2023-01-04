@@ -2,10 +2,13 @@
 from transformers import ElectraTokenizer, ElectraForSequenceClassification, pipeline
 from collections import deque, Counter
 from konlpy.tag import Okt
+from threading import Thread
 import whisper
 
-class STT:
+
+class STT(Thread):
     def __init__(self):
+        super().__init__()
         self.whisper_model = whisper.load_model("large", device="cuda")
         self.tokenizer = ElectraTokenizer.from_pretrained("monologg/koelectra-base-finetuned-nsmc")
         self.electra_model = ElectraForSequenceClassification.from_pretrained("monologg/koelectra-base-finetuned-nsmc")
