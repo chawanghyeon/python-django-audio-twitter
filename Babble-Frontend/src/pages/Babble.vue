@@ -14,8 +14,8 @@
 				<!-- babble -->
 				<div class="px-3 py-2 flex">
 					<img
-						v-if="babble.user.avatar.slice(-4) !== 'null'"
-						:src="babble.user.avatar"
+						v-if="babble.user.image.slice(-4) !== 'null'"
+						:src="babble.user.image"
 						class="w-10 h-10 rounded-full hover:opacity-90 cursor-pointer"
 					/>
 					<img
@@ -24,7 +24,7 @@
 						class="w-10 h-10 rounded-full hover:opacity-90 cursor-pointer"
 					/>
 					<div class="ml-2">
-						<div class="font-bold">{{ babble.user.username }}</div>
+						<div class="font-bold">{{ babble.user.first_name }}</div>
 						<div class="text-gray text-sm">@{{ babble.user.nickname }}</div>
 					</div>
 				</div>
@@ -37,11 +37,11 @@
 				</div>
 				<detail-audio-player
 					class="px-3 py-2"
-					:audioUrl="babble.fileUrl"
+					:audioUrl="babble.audio"
 					playerid="audio-player"
 				></detail-audio-player>
 				<div class="px-3 py-2 text-gray text-xs">
-					{{ moment(babble.regDate).fromNow() }}
+					{{ moment(babble.created).fromNow() }}
 				</div>
 				<div class="h-px w-full bg-gray-100"></div>
 				<div class="flex space-x-2 px-3 py-2 items-center">
@@ -87,8 +87,8 @@
 					class="flex hover:bg-gray-50 cursor-pointer px-3 py-3 border-b border-gray-100"
 				>
 					<img
-						v-if="comment.user.avatar.slice(-4) !== 'null'"
-						:src="comment.user.avatar"
+						v-if="comment.user.image.slice(-4) !== 'null'"
+						:src="comment.user.image"
 						class="w-10 h-10 rounded-full hover:opacity-90 cursor-pointer"
 					/>
 					<img
@@ -98,15 +98,15 @@
 					/>
 					<div class="ml-2 flex-1">
 						<div class="flex items-center space-x-2">
-							<span class="font-bold">{{ comment.user.username }}</span>
+							<span class="font-bold">{{ comment.user.first_name }}</span>
 							<span class="text-gray text-sm"
 								>@{{ comment.user.nickname }}</span
 							>
-							<span>{{ moment(comment.regDate).fromNow() }}</span>
+							<span>{{ moment(comment.created).fromNow() }}</span>
 						</div>
 						<audio-player
 							class="px-3 py-2"
-							:audioUrl="comment.fileUrl"
+							:audioUrl="comment.audio"
 						></audio-player>
 					</div>
 					<button
@@ -145,23 +145,16 @@ import {
 	unlike,
 	like,
 } from '../api/babble.js';
-import {
-	sendCommentNotification,
-	sendRebabbleNotification,
-	sendLikeNotification,
-} from '../api/babbleElasticsearch.js';
 
 export default {
 	components: { CommentModal, AudioPlayer, DetailAudioPlayer },
 	methods: {
 		onAddComment(comment) {
 			if (comment) {
-				comment.user.avatar = `http://localhost:88/image/${comment.user.avatar}`;
+				comment.user.image = `http://localhost:88/image/${comment.user.image}`;
 				this.babble.comments.push(comment);
 			}
 			this.showCommentModal = false;
-
-			sendCommentNotification(this.babble, this.currentUser);
 		},
 		onDeleteComment(commentId) {
 			if (confirm('정말로 답글을 삭제하시겠습니까?')) {
@@ -184,7 +177,7 @@ export default {
 				this.isRebabbled = false;
 			} else {
 				const data = {
-					fileUrl: this.babble.fileUrl,
+					audio: this.babble.audio,
 					tags: this.babble.tags,
 					rebabbleId: this.babble.id,
 				};
@@ -192,8 +185,6 @@ export default {
 				const rebabble = await insertRebabble(data);
 				this.babble.rebabbles.push(rebabble.data);
 				this.isRebabbled = true;
-
-				sendRebabbleNotification(this.babble, this.currentUser);
 			}
 		},
 		async handleLikes() {
@@ -207,8 +198,6 @@ export default {
 				like(this.babble.id);
 				this.babble.likes.push(this.currentUser);
 				this.isLiked = true;
-
-				sendLikeNotification(this.babble, this.currentUser);
 			}
 		},
 	},
@@ -224,10 +213,10 @@ export default {
 		onBeforeMount(async () => {
 			let data = await getBabble(route.params.id);
 			babble.value = data.data;
-			babble.value.user.avatar = `http://localhost:88/image/${babble.value.user.avatar}`;
+			babble.value.user.image = `http://localhost:88/image/${babble.value.user.image}`;
 
 			babble.value.comments.forEach(comment => {
-				comment.user.avatar = `http://localhost:88/image/${comment.user.avatar}`;
+				comment.user.image = `http://localhost:88/image/${comment.user.image}`;
 			});
 
 			babble.value.rebabbles.forEach(babble => {
