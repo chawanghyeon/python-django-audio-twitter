@@ -17,7 +17,6 @@ stt = STT()
 try:
     stt.start()
 except:
-    stt.join()
     stt = STT()
     stt.start()
 
