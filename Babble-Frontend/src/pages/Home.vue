@@ -7,8 +7,8 @@
 			<!-- babbleing section -->
 			<div class="flex px-3 py-3 border-b-8 border-gray-100">
 				<img
-					v-if="$store.state.user.avatar.slice(-4) !== 'null'"
-					:src="$store.state.user.avatar"
+					v-if="$store.state.user.image.slice(-4) !== 'null'"
+					:src="$store.state.user.image"
 					class="w-10 h-10 rounded-full hover:opacity-80 cursor-pointer"
 				/>
 				<img
@@ -47,9 +47,6 @@ export default {
 		async '$route.params.tag'(val) {
 			let data = await getBabblesWithTag(val);
 			this.babbles = data.data;
-			this.babbles.forEach(babble => {
-				babble.user.avatar = `http://localhost:88/image/${babble.user.avatar}`;
-			});
 		},
 	},
 	methods: {
@@ -73,9 +70,6 @@ export default {
 		onBeforeMount(async () => {
 			const response = await getBabbles();
 			babbles.value = response.data;
-			babbles.value.forEach(babble => {
-				babble.user.avatar = `http://localhost:88/image/${babble.user.avatar}`;
-			});
 		});
 
 		return { currentUser, babbles };
