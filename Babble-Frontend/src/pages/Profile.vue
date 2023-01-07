@@ -77,23 +77,21 @@
 			<!-- user info -->
 			<div class="mx-3 mt-2">
 				<div class="font-extrabold text-lg">
-					{{ profileUser.lastName + profileUser.firstName }}
+					{{ profileUser.last_name + profileUser.first_Name }}
 				</div>
 				<div class="text-gray">@{{ profileUser.nickname }}</div>
 				<div>{{ profileUser.bio }}</div>
 				<div>
 					<span class="text-gray">가입일: </span>
 					<span class="text-gray">{{
-						moment(profileUser.regDate).format('YYYY년 MM월')
+						moment(profileUser.created).format('YYYY년 MM월')
 					}}</span>
 				</div>
 				<div>
-					<span class="font-bold mr-1">{{
-						profileUser.followings.length
-					}}</span>
+					<span class="font-bold mr-1">{{ profileUser.followings.length }}</span>
 					<span class="text-gray mr-3">팔로우 중</span>
 					<span class="font-bold mr-1">{{ profileUser.followers.length }}</span>
-					<span class="text-gray">팔로워</span>
+					<span class="text-gray mr-3">팔로워</span>
 				</div>
 			</div>
 			<!-- tabs -->
@@ -164,7 +162,7 @@ import moment from 'moment';
 import store from '../store';
 import { sendFollowNotification } from '../api/babbleElasticsearch';
 import { computed, ref, onBeforeMount } from 'vue';
-import { getUser, follow, unfollow } from '../api/babble';
+import { getUser, follow, unfollow, getBabbles } from '../api/babble';
 import { useRoute } from 'vue-router';
 
 export default {
@@ -220,17 +218,16 @@ export default {
 		const rebabbles = ref([]);
 		const route = useRoute();
 		const babbles = ref([]);
+		const likeBabbles = ref([]);
 
 		onBeforeMount(async () => {
 			const id = route.params.id ?? currentUser.value.id;
 
 			let user = await getUser(id);
-			user.data.image = `http://localhost:88/image/${user.data.image}`;
-			user.data.background = `http://localhost:88/image/${user.data.background}`;
 			profileUser.value = user.data;
 
-			user.data.babbles.forEach(babble => {
-				babble.user.image = `http://localhost:88/image/${babble.user.image}`;
+			allBabbles = await getBabbles(id);
+			allBabbles.forEach(babble => {
 				if (babble.rebabbleId !== null) {
 					rebabbles.value.push(babble);
 				} else {
@@ -238,9 +235,7 @@ export default {
 				}
 			});
 
-			profileUser.value.likeBabbles.forEach(likeBabble => {
-				likeBabble.user.image = `http://localhost:88/image/${likeBabble.user.image}`;
-			});
+			likeBabbles = await getBabbles(id);
 
 			if (profileUser.value.id === currentUser.value.id) {
 				store.commit('SET_USER', user.data);
