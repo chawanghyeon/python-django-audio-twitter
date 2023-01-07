@@ -84,9 +84,7 @@ export default {
 				return;
 			}
 
-			let isValidate = validateEmail(username.value);
-
-			if (!isValidate) {
+			if (!validateEmail(username.value)) {
 				alert('이메일 형식이 맞지 않습니다.');
 				return;
 			}
@@ -103,7 +101,6 @@ export default {
 
 			signUp(data);
 			loading.value = false;
-
 			router.push('/login');
 		};
 

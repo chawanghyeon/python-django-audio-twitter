@@ -105,7 +105,7 @@
 					class="w-10 h-10 rounded-full"
 				/>
 				<div class="ml-2">
-					<div class="font-bold text-sm">{{ currentUser.username }}</div>
+					<div class="font-bold text-sm">{{ currentUser.first_name }}</div>
 					<div class="text-left text-gray-500 text-sm">
 						@{{ currentUser.nickname }}
 					</div>
@@ -129,10 +129,11 @@
 
 <script>
 import { ref, onBeforeMount, computed } from 'vue';
-import router from '../router';
-import store from '../store';
 import BabbleModal from '../components/BabbleModal.vue';
 import Trends from '../components/Trends.vue';
+import router from '../router';
+import store from '../store';
+import logout from '../api/auth';
 
 export default {
 	components: { BabbleModal, Trends },
@@ -142,9 +143,10 @@ export default {
 		const showBabbleModal = ref(false);
 		const currentUser = computed(() => store.state.user);
 
-		const onLogout = async () => {
+		const onLogout = () => {
 			store.commit('CLEAR_DATA');
-			await router.replace('/login');
+			logout()
+			router.replace('/login');
 		};
 
 		onBeforeMount(() => {
