@@ -66,22 +66,12 @@ export default {
 				password: password.value,
 			};
 
-			store.commit('SET_USERNAME', email.value);
-			store.commit('SET_PASSWORD', password.value);
-
 			const data = await signIn(userData);
-
-			await store.commit('SET_TOKEN', data.headers['authorization']);
-			const doc = await getMyInfo();
-
-			doc.data.avatar = `http://localhost:88/image/${doc.data.avatar}`;
-			doc.data.background = `http://localhost:88/image/${doc.data.background}`;
-
-			store.commit('SET_USER', doc.data);
+			await store.commit('SET_TOKEN', data.token);
+			
 			loading.value = false;
 			router.replace('/');
 		};
-
 		return {
 			email,
 			password,
