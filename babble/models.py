@@ -9,7 +9,7 @@ class User(models.Model):
     modified = models.DateTimeField(auto_now=True, blank=True, null=True)
     birthday = models.DateTimeField(blank=True, null=True)
     image = models.ImageField(upload_to="image/%Y/%m/%d", blank=True, null=True)
-    background = models.CharField(max_length=140, blank=True)
+    background = models.ImageField(upload_to="image/%Y/%m/%d", blank=True, null=True)
     nickname = models.CharField(max_length=20, unique=True, blank=True)
     location = models.CharField(max_length=20, blank=True)
     phoneNumber = models.CharField(max_length=20, blank=True)

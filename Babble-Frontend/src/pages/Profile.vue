@@ -17,7 +17,7 @@
 			<!-- background image -->
 			<div class="bg-gray-300 h-48 relative flex-none">
 				<img
-					v-if="$store.state.user.avatar.slice(-4) !== 'null'"
+					v-if="$store.state.user.image.slice(-4) !== 'null'"
 					:src="profileUser.background"
 					class="w-full h-48 object-cover"
 				/>
@@ -31,8 +31,8 @@
 					class="border-4 border-white bg-gray-100 w-28 h-28 rounded-full absolute -bottom-14 left-2"
 				>
 					<img
-						v-if="profileUser.avatar.slice(-4) !== 'null'"
-						:src="profileUser.avatar"
+						v-if="profileUser.image.slice(-4) !== 'null'"
+						:src="profileUser.image"
 						class="w-full h-full rounded-full opacity-90 hover:opacity-100 cursor-pointer"
 					/>
 					<img
@@ -225,12 +225,12 @@ export default {
 			const id = route.params.id ?? currentUser.value.id;
 
 			let user = await getUser(id);
-			user.data.avatar = `http://localhost:88/image/${user.data.avatar}`;
+			user.data.image = `http://localhost:88/image/${user.data.image}`;
 			user.data.background = `http://localhost:88/image/${user.data.background}`;
 			profileUser.value = user.data;
 
 			user.data.babbles.forEach(babble => {
-				babble.user.avatar = `http://localhost:88/image/${babble.user.avatar}`;
+				babble.user.image = `http://localhost:88/image/${babble.user.image}`;
 				if (babble.rebabbleId !== null) {
 					rebabbles.value.push(babble);
 				} else {
@@ -239,7 +239,7 @@ export default {
 			});
 
 			profileUser.value.likeBabbles.forEach(likeBabble => {
-				likeBabble.user.avatar = `http://localhost:88/image/${likeBabble.user.avatar}`;
+				likeBabble.user.image = `http://localhost:88/image/${likeBabble.user.image}`;
 			});
 
 			if (profileUser.value.id === currentUser.value.id) {
