@@ -1,19 +1,15 @@
-import { instance, mvcInstance } from './index';
+import { instance } from './index';
 
 function signUp(data) {
 	return instance.post('/signup', data);
 }
 
 function signIn(data) {
-	return instance.post('/login', data);
-}
-
-function allClient(data) {
-	return instance.get('/getMemberList', data);
+	return instance.post('/signin', data);
 }
 
 function updateUserInfo(data) {
-	return mvcInstance.put(`user/${data.id}`, data);
+	return instance.put(`user/${data.id}`, data);
 }
 
-export { signUp, signIn, allClient, updateUserInfo };
+export { signUp, signIn, updateUserInfo };

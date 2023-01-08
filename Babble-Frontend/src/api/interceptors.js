@@ -26,7 +26,6 @@ export function setInterceptors(instance) {
 		async function (error) {
 			const originalRequest = error.config;
 			if (error.response.status === 403 && !originalRequest._retry) {
-				console.log('토큰 만료');
 				originalRequest._retry = true;
 				if (store.state.username && store.state.password) {
 					const userInfo = {

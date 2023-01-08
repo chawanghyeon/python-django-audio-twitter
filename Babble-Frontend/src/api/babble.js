@@ -1,63 +1,55 @@
-import { mvcInstance } from './index';
+import { instance } from './index';
 
 function insertBabble(babble) {
-	return mvcInstance.post('babble', babble);
+	return instance.post('babble', babble);
 }
 
 function deleteBabble(id) {
-	return mvcInstance.delete(`/babble/${id}`);
+	return instance.delete(`/babble/${id}`);
 }
 
 function getBabble(id) {
-	return mvcInstance.get(`/babble/${id}`);
+	return instance.get(`/babble/${id}`);
 }
 
 function getBabbles() {
-	return mvcInstance.get('babbles');
+	return instance.get('babbles');
 }
 
-function getBabblesWithTag(tag) {
-	return mvcInstance.get(`babbles/${tag}`);
-}
-
-function getBabblesWithId(id) {
-	return mvcInstance.get(`user/${id}/babbles`);
+function getBabblesWithTag(id) {
+	return instance.get(`tag/${id}`);
 }
 
 function insertRebabble(babble) {
-	return mvcInstance.post('rebabble', babble);
+	return instance.post('rebabble', babble);
 }
 
 function getUser(id) {
-	return mvcInstance.get(`user/${id}`);
+	return instance.get(`user/${id}`);
 }
 
-function getMyInfo() {
-	return mvcInstance.get('my');
+function insertComment(comment) {
+	return instance.post(`comment`, comment);
 }
 
-function insertComment(babbleId, comment) {
-	return mvcInstance.post(`babble/${babbleId}/comment`, comment);
-}
-
-function deleteComment(babbleId, commentId) {
-	return mvcInstance.delete(`babble/${babbleId}/comment/${commentId}`);
+function deleteComment(commentId) {
+	return instance.delete(`comment/${commentId}`);
 }
 
 function like(id) {
-	return mvcInstance.post(`babble/${id}/like`);
+	return instance.post(`like`);
 }
 
 function unlike(id) {
-	return mvcInstance.delete(`babble/${id}/like`);
+	return instance.delete(`like/${id}`);
 }
 
 function follow(id) {
-	return mvcInstance.post(`user/${id}/follow`);
+	return instance.post(`follower`);
 }
 
 function unfollow(id) {
-	return mvcInstance.delete(`user/${id}/follow`);
+	return instance.delete(`follower/${id}`);
 }
 
 export {
@@ -74,6 +66,4 @@ export {
 	deleteComment,
 	follow,
 	unfollow,
-	getMyInfo,
-	getBabblesWithId,
 };

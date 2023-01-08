@@ -15,8 +15,4 @@ function createInstanceWithAuth(url) {
 	return setInterceptors(instance);
 }
 
-export const instance = createInstance('http://localhost:80');
-export const flaskInstance = createInstance('http://localhost:5000');
-export const mvcInstance = createInstanceWithAuth('http://localhost:80');
-export const fluxInstance = createInstanceWithAuth('http://localhost:88');
-export const elInstance = createInstance('http://localhost:9200');
+export const instance = createInstanceWithAuth('http://192.168.35.123:');
