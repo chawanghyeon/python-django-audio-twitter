@@ -98,7 +98,7 @@ import { onBeforeMount, ref } from 'vue';
 export default {
 	props: ['audioUrl', 'playerid'],
 	/**
-	 * playbackTime = local var that syncs to audio.currentTime
+	 * playbackTime = local let that syncs to audio.currentTime
 	 * audioDuration = duration of audio file in seconds
 	 * isPlaying = boolean (true if audio is playing)
 	 *
@@ -116,7 +116,7 @@ export default {
 	setup(props) {
 		const url = ref(null);
 
-		onBeforeMount(async () => {
+		onBeforeMount(() => {
 			url.value = `http://localhost:88/audio/${props.audioUrl}`;
 		});
 
@@ -125,7 +125,7 @@ export default {
 	methods: {
 		//Set the range slider max value equal to audio duration
 		initSlider() {
-			var audio = this.$refs.player;
+			let audio = this.$refs.player;
 			if (audio) {
 				this.audioDuration = Math.round(audio.duration);
 			}
@@ -134,17 +134,17 @@ export default {
 		//Convert audio current time from seconds to min:sec display
 		convertTime(seconds) {
 			const format = val => `0${Math.floor(val)}`.slice(-2);
-			var hours = seconds / 3600;
-			var minutes = (seconds % 3600) / 60;
+			let hours = seconds / 3600;
+			let minutes = (seconds % 3600) / 60;
 
 			return [minutes, seconds % 60].map(format).join(':');
 		},
 
 		//Show the total duration of audio file
 		totalTime() {
-			var audio = this.$refs.player;
+			let audio = this.$refs.player;
 			if (audio) {
-				var seconds = audio.duration;
+				let seconds = audio.duration;
 				return this.convertTime(seconds);
 			} else {
 				return '00:00';
@@ -153,9 +153,9 @@ export default {
 
 		//Display the audio time elapsed so far
 		elapsedTime() {
-			var audio = this.$refs.player;
+			let audio = this.$refs.player;
 			if (audio) {
-				var seconds = audio.currentTime;
+				let seconds = audio.currentTime;
 				return this.convertTime(seconds);
 			} else {
 				return '00:00';
@@ -164,9 +164,9 @@ export default {
 
 		//Playback listener function runs every 100ms while audio is playing
 		playbackListener(e) {
-			var audio = this.$refs.player;
+			let audio = this.$refs.player;
 
-			//Sync local 'playbackTime' var to audio.currentTime and update global state
+			//Sync local 'playbackTime' let to audio.currentTime and update global state
 			this.playbackTime = audio.currentTime;
 
 			//console.log("update: " + audio.currentTime);
@@ -190,7 +190,7 @@ export default {
 		},
 		//Remove listeners after audio play stops
 		cleanupListeners() {
-			var audio = this.$refs.player;
+			let audio = this.$refs.player;
 			audio.removeEventListener('freqtimeupdate', this.playbackListener);
 			audio.removeEventListener('ended', this.endListener);
 			audio.removeEventListener('pause', this.pauseListener);
@@ -198,8 +198,8 @@ export default {
 			//console.log("All cleaned up!");
 		},
 		toggleAudio() {
-			var audio = this.$refs.player;
-			//var audio = document.getElementById("audio-player");
+			let audio = this.$refs.player;
+			//let audio = document.getElementById("audio-player");
 			if (audio.paused) {
 				audio.play();
 				this.isPlaying = true;
@@ -212,7 +212,7 @@ export default {
 	mounted: function () {
 		// nextTick code will run only after the entire view has been rendered
 		this.$nextTick(function () {
-			var audio = this.$refs.player;
+			let audio = this.$refs.player;
 			//Wait for audio to load, then run initSlider() to get audio duration and set the max value of our slider
 			// "loademetadata" Event https://www.w3schools.com/tags/av_event_loadedmetadata.asp
 			audio.addEventListener(
@@ -233,7 +233,7 @@ export default {
 			//Wait for audio to begin play, then start playback listener function
 			this.$watch('isPlaying', function () {
 				if (this.isPlaying) {
-					var audio = this.$refs.player;
+					let audio = this.$refs.player;
 					this.initSlider();
 					//console.log("Audio playback started.");
 
@@ -248,9 +248,9 @@ export default {
 
 			//Update current audio position when user drags progress slider
 			this.$watch('playbackTime', function () {
-				var audio = this.$refs.player;
+				let audio = this.$refs.player;
 
-				var diff = Math.abs(this.playbackTime - this.$refs.player.currentTime);
+				let diff = Math.abs(this.playbackTime - this.$refs.player.currentTime);
 
 				//Throttle synchronization to prevent infinite loop between playback listener and this watcher
 				if (diff > 0.01) {

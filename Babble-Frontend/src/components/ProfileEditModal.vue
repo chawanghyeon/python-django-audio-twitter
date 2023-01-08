@@ -173,25 +173,10 @@ export default {
 			document.getElementById('profileImageInput').click();
 		};
 
-		const getImageName = () => {
-			const date = new Date();
-			if (date.getMonth() + 1 < 10) {
-				let name = `${store.state.user.username}.${date.getFullYear()}-0${
-					date.getMonth() + 1
-				}-${date.getDate()}-${date.getHours()}-${date.getMinutes()}-${date.getSeconds()}-${date.getMilliseconds()}.jpeg`;
-				return name;
-			} else {
-				let name = `${store.state.user.username}.${date.getFullYear()}-${
-					date.getMonth() + 1
-				}-${date.getDate()}-${date.getHours()}-${date.getMinutes()}-${date.getSeconds()}-${date.getMilliseconds()}.jpeg`;
-				return name;
-			}
-		};
-
 		const previewBackgroundImage = event => {
 			const file = event.target.files[0];
 
-			backgroundImageData.value = new File([file], getImageName(), {
+			backgroundImageData.value = new File([file], 'temp', {
 				type: file.type,
 				lastModified: file.lastModified,
 			});
@@ -206,7 +191,7 @@ export default {
 		const previewProfileImage = async event => {
 			const file = event.target.files[0];
 
-			profileImageData.value = new File([file], getImageName(), {
+			profileImageData.value = new File([file], 'temp', {
 				type: file.type,
 				lastModified: file.lastModified,
 			});
@@ -220,27 +205,8 @@ export default {
 
 		const onSaveProfile = () => {
 			const tempUser = store.state.user;
-
-			if (profileImageData.value) {
-				tempUser.avatar = profileImageData.value.name;
-				const formData = new FormData();
-				formData.append('image', profileImageData.value);
-
-				saveImage(formData);
-			} else {
-				tempUser.avatar = tempUser.avatar.slice(26);
-			}
-
-			if (backgroundImageData.value) {
-				tempUser.background = backgroundImageData.value.name;
-				const formData = new FormData();
-				formData.append('image', backgroundImageData.value);
-
-				saveImage(formData);
-			} else {
-				tempUser.background = tempUser.background.slice(26);
-			}
-
+			tempUser.background = backgroundImageData.value;
+			tempUser.image = profileImageData.value;
 			updateUserInfo(tempUser);
 			emit('close-modal');
 		};

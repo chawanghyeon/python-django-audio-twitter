@@ -349,42 +349,6 @@ export default {
 				checkedAudio.data.sensitivity
 			);
 
-			this.tags.forEach(tag => {
-				let answer = '';
-				switch (tag) {
-					case '기쁨':
-						answer = '😍';
-						break;
-					case '신뢰':
-						answer = '😉';
-						break;
-					case '공포':
-						answer = '😱';
-						break;
-					case '놀라움':
-						answer = '😲';
-						break;
-					case '슬품':
-						answer = '😢';
-						break;
-					case '혐오':
-						answer = '🤢';
-						break;
-					case '분노':
-						answer = '😡';
-						break;
-					case '기대':
-						answer = '😮';
-						break;
-					default:
-						answer = 'none';
-						break;
-				}
-				if (answer !== 'none') {
-					this.tags.push(answer);
-				}
-			});
-
 			this.url = `http://localhost:88/audio/${checkedAudio.data.name}`;
 			this.record = checkedAudio.data;
 			store.commit('SET_CHECKEDAUDIO', checkedAudio.data);

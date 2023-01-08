@@ -50,8 +50,7 @@ export default {
 				};
 
 				let newBabble = await insertBabble(babble);
-				newBabble.data.user.avatar = `http://localhost:88/image/${newBabble.data.user.avatar}`;
-
+				
 				emit('insert-babble', newBabble.data);
 			} else {
 				store.commit('SET_ISCOMMENTMODAL', false);

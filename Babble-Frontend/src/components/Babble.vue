@@ -1,12 +1,10 @@
 <template>
 	<!-- babbles -->
-	<div
-		class="flex px-3 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
-	>
+	<div class="flex px-3 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer">
 		<router-link :to="`/profile/${babble.user.id}`">
 			<img
-				v-if="babble.user.avatar.slice(-4) !== 'null'"
-				:src="babble.user.avatar"
+				v-if="babble.user.image.slice(-4) !== 'null'"
+				:src="babble.user.image"
 				class="w-10 h-10 rounded-full hover:opacity-80 cursor-pointer"
 			/>
 			<img
@@ -17,18 +15,18 @@
 		</router-link>
 		<div class="ml-3 flex-1 flex flex-col space-y-1">
 			<div v-if="babble.rebabbleUser">
-				Rebabbleed by {{ babble.rebabbleUser.username }}
+				Rebabbleed by {{ babble.rebabbleUser.first_name }}
 			</div>
 			<div class="text-sm flex justify-between items-center">
 				<router-link :to="`/babble/${babble.id}`">
 					<div class="space-x-1">
-						<span class="font-bold">{{ babble.user.username }}</span>
+						<span class="font-bold">{{ babble.user.first_name }}</span>
 						<span class="text-gray-500 text-xs"
 							>@{{ babble.user.nickname }}</span
 						>
 						<span>·</span>
 						<span class="text-gray-500 text-xs">{{
-							moment(babble.regDate).fromNow()
+							moment(babble.created).fromNow()
 						}}</span>
 					</div>
 				</router-link>
@@ -50,7 +48,7 @@
 				>
 			</div>
 			<!-- babble body -->
-			<audio-player :audioUrl="babble.fileUrl"></audio-player>
+			<audio-player :audio="babble.audio"></audio-player>
 			<!-- babble actions -->
 			<div class="flex justify-between">
 				<!-- comment button -->
@@ -59,7 +57,7 @@
 					class="text-gray-500 hover:text-primary"
 				>
 					<i class="far fa-comment hover:bg-blue-50 rounded-full p-2"></i>
-					<span class="ml-1 text-sm">{{ babble.comments.length }}</span>
+					<span class="ml-1 text-sm">{{ babble.comment_count }}</span>
 				</div>
 				<!-- rebabble button -->
 				<div
@@ -68,11 +66,11 @@
 					@click="onInsertRebabble(babble)"
 				>
 					<i class="fas fa-retweet hover:bg-green-50 rounded-full p-2"></i>
-					<span class="ml-1 text-sm">{{ babble.rebabbles.length }}</span>
+					<span class="ml-1 text-sm">{{ babble.rebabble_count }}</span>
 				</div>
 				<div v-else class="text-green-400" @click="onDeleteRebabble()">
 					<i class="fas fa-retweet hover:bg-green-50 rounded-full p-2"></i>
-					<span class="ml-1 text-sm">{{ babble.rebabbles.length }}</span>
+					<span class="ml-1 text-sm">{{ babble.rebabble_count }}</span>
 				</div>
 				<!-- like button -->
 				<div
@@ -81,11 +79,11 @@
 					@click="handleLike(babble)"
 				>
 					<i class="far fa-heart hover:bg-red-50 rounded-full p-2"></i>
-					<span class="ml-1 text-sm">{{ babble.likes.length }}</span>
+					<span class="ml-1 text-sm">{{ babble.like_count }}</span>
 				</div>
 				<div v-else class="text-red-400" @click="handleUnlike(babble.id)">
 					<i class="far fa-heart hover:bg-red-50 rounded-full p-2"></i>
-					<span class="ml-1 text-sm">{{ babble.likes.length }}</span>
+					<span class="ml-1 text-sm">{{ babble.like_count }}</span>
 				</div>
 				<!-- share button -->
 				<div class="text-gray-500 hover:text-primary"></div>
@@ -104,10 +102,6 @@ import CommentModal from './CommentModal.vue';
 import AudioPlayer from './AudioPlayer.vue';
 import moment from 'moment';
 import { deleteBabble, insertRebabble, like, unlike } from '../api/babble';
-import {
-	sendRebabbleNotification,
-	sendLikeNotification,
-} from '../api/babbleElasticsearch.js';
 import { ref } from 'vue';
 
 export default {
@@ -123,19 +117,16 @@ export default {
 		},
 		async onInsertRebabble(babble) {
 			const data = {
-				fileUrl: babble.fileUrl,
+				audio: babble.audio,
 				tags: babble.tags,
 				rebabbleId: babble.id,
 			};
 
-			let rebabble = await insertRebabble(data);
-			rebabble.data.user.avatar = `http://localhost:88/image/${rebabble.data.user.avatar}`;
+			const rebabble = await insertRebabble(data);
 
 			this.$emit('rebabble', rebabble.data);
 			this.babble.rebabbles.push(rebabble.data);
 			this.isRebabbled = true;
-
-			sendRebabbleNotification(this.babble, this.currentUser);
 		},
 		onDeleteRebabble() {
 			this.babble.rebabbles.forEach(rebabble => {
@@ -146,24 +137,20 @@ export default {
 					this.babble.rebabbles.splice(index, 1);
 
 					this.$emit('unrebabble', rebabble.id);
+					this.isRebabbled = false;
+					return;
 				}
 			});
-
-			this.isRebabbled = false;
 		},
 		handleLike(babble) {
 			like(babble.id);
-			this.babble.likes.push(this.currentUser);
+			this.babble.like_count++;
 			this.isLiked = true;
 			this.$emit('like', babble);
-
-			sendLikeNotification(this.babble, this.currentUser);
 		},
 		handleUnlike(babbleId) {
 			unlike(babbleId);
-			this.babble.likes = this.babble.likes.filter(
-				user => user.id != this.currentUser.id
-			);
+			this.babble.like_count--;
 			this.isLiked = false;
 			this.$emit('unlike', babbleId);
 		},

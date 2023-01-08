@@ -2,8 +2,9 @@
 	<div @click="play()">Listen Babble</div>
 </template>
 <script>
+import server from '../api/constants';
 export default {
-	props: ['audioUrl'],
+	props: ['id'],
 	data: function () {
 		return {
 			isPlaying: false,
@@ -20,9 +21,9 @@ export default {
 		},
 	},
 	methods: {
-		async play() {
+		play() {
 			if (!this.isLoaded) {
-				this.audio = new Audio(`http://localhost:88/audio/${this.audioUrl}`);
+				this.audio = new Audio(`${server}/babble/${this.id}`);
 				this.isLoaded = true;
 			}
 			if (!this.isPlaying) {

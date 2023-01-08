@@ -25,8 +25,8 @@
 				<!-- babble section -->
 				<div class="flex p-4">
 					<img
-						v-if="currentUser.avatar.slice(-4) !== 'null'"
-						:src="currentUser.avatar"
+						v-if="currentUser.image.slice(-4) !== 'null'"
+						:src="currentUser.image"
 						class="w-10 h-10 rounded-full hover:opacity-80 cursor-pointer"
 					/>
 					<img
