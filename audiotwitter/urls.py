@@ -24,7 +24,6 @@ router.register(r"babble", views.BabbleViewSet, basename="babble")
 router.register(r"comment", views.CommentViewSet, basename="comment")
 router.register(r"follower", views.FollowerViewSet, basename="follower")
 router.register(r"like", views.LikeViewSet, basename="like")
-router.register(r"audio", views.AudioViewSet, basename="audio")
 
 urlpatterns = [
     path("admin/", admin.site.urls),
