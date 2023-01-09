@@ -8,7 +8,7 @@ import whisper
 
 class STT(Thread):
     def __init__(self):
-        super().__init__()
+        super().__init__(daemon=True)
         self.whisper_model = whisper.load_model("large", device="cuda")
         self.tokenizer = ElectraTokenizer.from_pretrained("monologg/koelectra-base-finetuned-nsmc")
         self.electra_model = ElectraForSequenceClassification.from_pretrained("monologg/koelectra-base-finetuned-nsmc")
