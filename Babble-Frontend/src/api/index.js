@@ -15,4 +15,4 @@ function createInstanceWithAuth(url) {
 	return setInterceptors(instance);
 }
 
-export const instance = createInstanceWithAuth('http://192.168.35.123:');
+export const instance = createInstanceWithAuth('http://192.168.35.123:8000');
