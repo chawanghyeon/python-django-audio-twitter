@@ -35,7 +35,7 @@ class Babble(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     reBable = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
     audio = models.FileField(upload_to="audio/%Y/%m/%d")
-    duration = models.IntegerField(blank=True)
+    duration = models.IntegerField(blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True, blank=True)
     modified = models.DateTimeField(auto_now=True, blank=True, null=True)
     tags = models.ManyToManyField(Tag, blank=True)
@@ -48,6 +48,7 @@ class Comment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     babble = models.ForeignKey(Babble, on_delete=models.CASCADE)
     audio = models.FileField(upload_to="audio/%Y/%m/%d")
+    duration = models.IntegerField(blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True, blank=True, null=True)
 
