@@ -32,7 +32,7 @@ class UserViewSet(viewsets.ModelViewSet):
         if pk is None:
             user = request.user
         else:
-            user = get_object_or_404(User, pk=pk)
+            user = await get_object_or_404(User, pk=pk)
 
         if user:
             serializer = UserSerializer(user)
@@ -47,7 +47,7 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = UserSerializer(request.user, data=request.data)
 
         if serializer.is_valid():
-            serializer.save()
+            await serializer.save()
             return Response({'message': 'User updated successfully'}, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
@@ -56,7 +56,7 @@ class UserViewSet(viewsets.ModelViewSet):
         check = authenticate(username=request.user.username, password=request.data.get('password'))
 
         if check:
-            request.user.delete()
+            await request.user.delete()
             return Response({'message': 'User deleted successfully'}, status=status.HTTP_200_OK)
 
         return Response({'error': 'Wrong password'}, status=status.HTTP_401_UNAUTHORIZED)
@@ -67,7 +67,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
         if serializer.is_valid():
             serializer.password = make_password(serializer.password)
-            serializer.save()
+            await serializer.save()
             return Response({'message': 'User created successfully'}, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
@@ -84,7 +84,7 @@ class UserViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'], url_name='logout')
     async def logout(self, request):
-        request.user.auth_token.delete()
+        await request.user.auth_token.delete()
         return Response({'message': 'Logged out successfully'}, status=status.HTTP_200_OK)
     
     @action(detail=True, methods=['post'], url_name='password')
@@ -93,7 +93,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
         if user.check_password(request.data.get('old_password')):
             user.password = make_password(request.data.get('new_password'))
-            user.save()
+            await user.save()
             return Response({'message': 'Password updated successfully'}, status=status.HTTP_200_OK)
 
         return Response({'error': 'Wrong password'}, status=status.HTTP_401_UNAUTHORIZED)
