@@ -12,6 +12,7 @@ from rest_framework.parsers import MultiPartParser
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404, get_list_or_404
 from .stt import STT
+import asyncio
 
 stt = STT()
 try:
@@ -27,7 +28,7 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, IsOwnerOrReadOnly)
     parser_classes = (MultiPartParser,)
     
-    def retrieve(self, request, pk=None):
+    async def retrieve(self, request, pk=None):
         if pk is None:
             user = request.user
         else:
@@ -35,11 +36,11 @@ class UserViewSet(viewsets.ModelViewSet):
 
         if user:
             serializer = UserSerializer(user)
-            return Response(serializer.data)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
-    def update(self, request):
+    async def update(self, request):
         if request.data.image:
             request.data.image.name = request.user.id + '-' + '%y%m%d'
 
@@ -51,7 +52,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
-    def destroy(self, request):
+    async def destroy(self, request):
         check = authenticate(username=request.user.username, password=request.data.get('password'))
 
         if check:
@@ -61,7 +62,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response({'error': 'Wrong password'}, status=status.HTTP_401_UNAUTHORIZED)
 
     @action(detail=True, methods=['post'], url_name='signup')
-    def signup(self, request):
+    async def signup(self, request):
         serializer = UserSerializer(data=request.data)
 
         if serializer.is_valid():
@@ -72,7 +73,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['post'], url_name='signin')
-    def signin(self, request):
+    async def signin(self, request):
         user = authenticate(username=request.data.get('username'), password=request.data.get('password'))
 
         if user:
@@ -82,12 +83,12 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
     
     @action(detail=True, methods=['post'], url_name='logout')
-    def logout(self, request):
+    async def logout(self, request):
         request.user.auth_token.delete()
         return Response({'message': 'Logged out successfully'}, status=status.HTTP_200_OK)
     
     @action(detail=True, methods=['post'], url_name='password')
-    def update_password(self, request):
+    async def update_password(self, request):
         user = request.user
 
         if user.check_password(request.data.get('old_password')):
@@ -104,7 +105,7 @@ class BabbleViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, IsOwnerOrReadOnly)
     parser_classes = (MultiPartParser,)
 
-    def create(self, request):
+    async def create(self, request):
         request.data['audio'].name = request.user.id + '-' + '%y%m%d'
         serializer = BabbleSerializer(data=request.data)
         # 오디오 분석 기능 추가
@@ -114,12 +115,12 @@ class BabbleViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
-    def retrieve(self, pk=None):
+    async def retrieve(self, pk=None):
         babble = get_object_or_404(Babble, pk=pk)
         babble.audio.open()
         return FileResponse(babble.audio, as_attachment=True, filename=babble.audio.name, status=status.HTTP_200_OK)
 
-    def update(self, request, pk=None):
+    async def update(self, request, pk=None):
         # 오디오 분석 기능 추가
         babble = get_object_or_404(Babble, pk=pk)
         request.data['audio'].name = request.user.id + '-' + '%y%m%d'
@@ -131,7 +132,7 @@ class BabbleViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
     
-    def destroy(self, pk=None):
+    async def destroy(self, pk=None):
         get_object_or_404(Babble, pk=pk).delete()
         return Response({'message': 'Babble deleted successfully'}, status=status.HTTP_200_OK)
 
@@ -142,7 +143,7 @@ class CommentViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, IsOwnerOrReadOnly)
     parser_classes = (MultiPartParser,)
 
-    def create(self, request):
+    async def create(self, request):
         request.data['audio'].name = request.user.id + '-' + '%y%m%d'
         serializer = CommentSerializer(data=request.data)
         # 오디오 분석 기능 추가
@@ -152,7 +153,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
-    def update(self, request, pk=None):
+    async def update(self, request, pk=None):
         # 오디오 분석 기능 추가
         comment = get_object_or_404(Comment, pk=pk)
         request.data['audio'].name = request.user.id + '-' + '%y%m%d'
@@ -164,17 +165,17 @@ class CommentViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
-    def destroy(self, pk=None):
+    async def destroy(self, pk=None):
         get_object_or_404(Comment, pk=pk).delete()
         return Response({'message': 'Comment deleted successfully'}, status=status.HTTP_200_OK)
 
-    def list(self, request):
+    async def list(self, request):
         babble = Babble.objects.get(user=request.user)
         comments = get_list_or_404(Comment, babble=babble)
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def retrieve(self, pk=None):
+    async def retrieve(self, pk=None):
         comment = get_object_or_404(Comment, pk=pk)
         comment.audio.open()
         return FileResponse(comment.audio, as_attachment=True, filename=comment.audio.name, status=status.HTTP_200_OK)
@@ -185,7 +186,7 @@ class FollowerViewSet(viewsets.ModelViewSet):
     serializer_class = FollowerSerializer
     permission_classes = (IsAuthenticated, IsOwnerOrReadOnly)
 
-    def create(self, request):
+    async def create(self, request):
         serializer = FollowerSerializer(data=request.data)
 
         if serializer.is_valid():
@@ -194,18 +195,18 @@ class FollowerViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
-    def destroy(self, pk=None):
+    async def destroy(self, pk=None):
         get_object_or_404(Follower, pk=pk).delete()
         return Response({'message': 'Follower deleted successfully'}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['get'], url_path='followings')
-    def get_followings(self, request):
+    async def get_followings(self, request):
         follower = get_list_or_404(Follower, follower=request.user)
         serializer = FollowerSerializer(follower, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['get'], url_path='followers')
-    def get_followers(self, request):
+    async def get_followers(self, request):
         follower = get_list_or_404(Follower, following=request.user)
         serializer = FollowerSerializer(follower, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -216,7 +217,7 @@ class LikeViewSet(viewsets.ModelViewSet):
     serializer_class = LikeSerializer
     permission_classes = (IsAuthenticated, IsOwnerOrReadOnly)
 
-    def create(self, request):
+    async def create(self, request):
         serializer = LikeSerializer(data=request.data)
 
         if serializer.is_valid():
@@ -225,7 +226,7 @@ class LikeViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
-    def destroy(self, pk=None):
+    async def destroy(self, pk=None):
         get_object_or_404(Like, pk=pk).delete()
         return Response({'message': 'Like deleted successfully'}, status=status.HTTP_200_OK)
 
@@ -236,7 +237,7 @@ class TagViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, IsOwnerOrReadOnly)
 
     @action(detail=True, methods=['get'])
-    def get_babbles_with_tag(self, pk=None):
+    async def get_babbles_with_tag(self, pk=None):
         tag = get_object_or_404(Tag, pk=pk)
         babbles = get_list_or_404(Babble, tag=tag)
         serializer = BabbleSerializer(babbles, many=True)
