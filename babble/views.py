@@ -148,36 +148,36 @@ class CommentViewSet(viewsets.ModelViewSet):
         serializer = CommentSerializer(data=request.data)
         # 오디오 분석 기능 추가
         if serializer.is_valid():
-            serializer.save()
+            await serializer.save()
             return Response({'message': 'Comment created successfully'}, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
     async def update(self, request, pk=None):
         # 오디오 분석 기능 추가
-        comment = get_object_or_404(Comment, pk=pk)
+        comment = await get_object_or_404(Comment, pk=pk)
         request.data['audio'].name = request.user.id + '-' + '%y%m%d'
         serializer = CommentSerializer(comment, data=request.data)
 
         if serializer.is_valid():
-            serializer.save()
+            await serializer.save()
             return Response({'message': 'Comment updated successfully'}, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
     async def destroy(self, pk=None):
-        get_object_or_404(Comment, pk=pk).delete()
+        await get_object_or_404(Comment, pk=pk).delete()
         return Response({'message': 'Comment deleted successfully'}, status=status.HTTP_200_OK)
 
     async def list(self, request):
-        babble = Babble.objects.get(user=request.user)
-        comments = get_list_or_404(Comment, babble=babble)
+        babble = await Babble.objects.get(user=request.user)
+        comments = await get_list_or_404(Comment, babble=babble)
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     async def retrieve(self, pk=None):
-        comment = get_object_or_404(Comment, pk=pk)
-        comment.audio.open()
+        comment = await get_object_or_404(Comment, pk=pk)
+        await comment.audio.open()
         return FileResponse(comment.audio, as_attachment=True, filename=comment.audio.name, status=status.HTTP_200_OK)
 
 class FollowerViewSet(viewsets.ModelViewSet):
