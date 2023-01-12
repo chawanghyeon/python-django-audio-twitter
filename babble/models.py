@@ -22,7 +22,7 @@ class User(models.Model):
         return self.first_name
 
     def __str__(self):
-        return "%d %s" % (self.first_name, self.avatar)
+        return "%d %s" % (self.first_name, self.image)
 
 
 class Tag(models.Model):
@@ -80,4 +80,4 @@ class Like(models.Model):
     created = models.DateTimeField(auto_now_add=True)
 
     def __unicode__(self):
-        return self.user.first_name + " likes " + self.babble.id
+        return self.user.first_name + " likes " + str(self.babble.id)

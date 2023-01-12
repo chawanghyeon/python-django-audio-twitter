@@ -23,7 +23,7 @@ except:
     stt = STT()
     stt.start()
 
-# test2
+# test4
 class UserViewSet(viewsets.ModelViewSet):
 
     queryset = User.objects.all()
@@ -35,7 +35,7 @@ class UserViewSet(viewsets.ModelViewSet):
         if pk is None:
             user = request.user
         else:
-            user = await get_object_or_404(User, pk=pk)
+            user = get_object_or_404(User, pk=pk)
 
         if user:
             serializer = UserSerializer(user)
@@ -77,7 +77,7 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = UserSerializer(data=request.data)
 
         if serializer.is_valid():
-            serializer.password = make_password(serializer.password)
+            serializer.password = make_password(serializer.password)  # type: ignore
             await serializer.save()
             return Response(
                 {"message": "User created successfully"}, status=status.HTTP_201_CREATED
@@ -143,8 +143,8 @@ class BabbleViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     async def retrieve(self, pk=None):
-        babble = await get_object_or_404(Babble, pk=pk)
-        await babble.audio.open()
+        babble = get_object_or_404(Babble, pk=pk)
+        babble.audio.open()
         return FileResponse(
             babble.audio,
             as_attachment=True,
@@ -154,7 +154,7 @@ class BabbleViewSet(viewsets.ModelViewSet):
 
     async def update(self, request, pk=None):
         # 오디오 분석 기능 추가
-        babble = await get_object_or_404(Babble, pk=pk)
+        babble = get_object_or_404(Babble, pk=pk)
         request.data["audio"].name = request.user.id + "-" + "%y%m%d"
         serializer = BabbleSerializer(babble, data=request.data)
 
@@ -167,7 +167,7 @@ class BabbleViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     async def destroy(self, pk=None):
-        await get_object_or_404(Babble, pk=pk).delete()
+        get_object_or_404(Babble, pk=pk).delete()
         return Response(
             {"message": "Babble deleted successfully"}, status=status.HTTP_200_OK
         )
@@ -195,7 +195,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     async def update(self, request, pk=None):
         # 오디오 분석 기능 추가
-        comment = await get_object_or_404(Comment, pk=pk)
+        comment = get_object_or_404(Comment, pk=pk)
         request.data["audio"].name = request.user.id + "-" + "%y%m%d"
         serializer = CommentSerializer(comment, data=request.data)
 
@@ -208,20 +208,20 @@ class CommentViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     async def destroy(self, pk=None):
-        await get_object_or_404(Comment, pk=pk).delete()
+        get_object_or_404(Comment, pk=pk).delete()
         return Response(
             {"message": "Comment deleted successfully"}, status=status.HTTP_200_OK
         )
 
     async def list(self, request):
-        babble = await Babble.objects.get(user=request.user)
-        comments = await get_list_or_404(Comment, babble=babble)
+        babble = Babble.objects.get(user=request.user)
+        comments = get_list_or_404(Comment, babble=babble)
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     async def retrieve(self, pk=None):
-        comment = await get_object_or_404(Comment, pk=pk)
-        await comment.audio.open()
+        comment = get_object_or_404(Comment, pk=pk)
+        comment.audio.open()
         return FileResponse(
             comment.audio,
             as_attachment=True,
@@ -249,20 +249,20 @@ class FollowerViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     async def destroy(self, pk=None):
-        await get_object_or_404(Follower, pk=pk).delete()
+        get_object_or_404(Follower, pk=pk).delete()
         return Response(
             {"message": "Follower deleted successfully"}, status=status.HTTP_200_OK
         )
 
     @action(detail=True, methods=["get"], url_path="followings")
     async def get_followings(self, request):
-        follower = await get_list_or_404(Follower, follower=request.user)
+        follower = get_list_or_404(Follower, follower=request.user)
         serializer = FollowerSerializer(follower, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=["get"], url_path="followers")
     async def get_followers(self, request):
-        follower = await get_list_or_404(Follower, following=request.user)
+        follower = get_list_or_404(Follower, following=request.user)
         serializer = FollowerSerializer(follower, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -285,7 +285,7 @@ class LikeViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     async def destroy(self, pk=None):
-        await get_object_or_404(Like, pk=pk).delete()
+        get_object_or_404(Like, pk=pk).delete()
         return Response(
             {"message": "Like deleted successfully"}, status=status.HTTP_200_OK
         )
@@ -299,7 +299,7 @@ class TagViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["get"])
     async def get_babbles_with_tag(self, pk=None):
-        tag = await get_object_or_404(Tag, pk=pk)
-        babbles = await get_list_or_404(Babble, tag=tag)
+        tag = get_object_or_404(Tag, pk=pk)
+        babbles = get_list_or_404(Babble, tag=tag)
         serializer = BabbleSerializer(babbles, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
