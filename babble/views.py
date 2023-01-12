@@ -23,7 +23,7 @@ except:
     stt = STT()
     stt.start()
 
-# test
+# test2
 class UserViewSet(viewsets.ModelViewSet):
 
     queryset = User.objects.all()
