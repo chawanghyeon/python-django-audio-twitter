@@ -16,18 +16,27 @@
 # result = asyncio.run(main())
 # print(result)
 
-# -*- coding: utf-8 -*-
-from transformers import ElectraTokenizer, ElectraForSequenceClassification, pipeline
-from collections import deque, Counter
-from konlpy.tag import Okt
-import whisper
+from collections import Counter, deque
 
-class STT():
+import whisper
+from konlpy.tag import Okt
+# -*- coding: utf-8 -*-
+from transformers import (ElectraForSequenceClassification, ElectraTokenizer,
+                          pipeline)
+
+
+class STT:
     def __init__(self):
         self.whisper_model = whisper.load_model("large", device="cuda")
-        self.tokenizer = ElectraTokenizer.from_pretrained("monologg/koelectra-base-finetuned-nsmc")
-        self.electra_model = ElectraForSequenceClassification.from_pretrained("monologg/koelectra-base-finetuned-nsmc")
-        self.analyzer = pipeline("sentiment-analysis", tokenizer=self.tokenizer, model=self.electra_model)
+        self.tokenizer = ElectraTokenizer.from_pretrained(
+            "monologg/koelectra-base-finetuned-nsmc"
+        )
+        self.electra_model = ElectraForSequenceClassification.from_pretrained(
+            "monologg/koelectra-base-finetuned-nsmc"
+        )
+        self.analyzer = pipeline(
+            "sentiment-analysis", tokenizer=self.tokenizer, model=self.electra_model
+        )
         self.okt = Okt()
         self.queue = deque([])
 
@@ -37,19 +46,20 @@ class STT():
                 continue
             audio_path, serializer = self.queue.popleft()
             stt = self.transcribe(audio_path)
-            serializer.data['tags'] = self.get_keywords(stt)
+            serializer.data["tags"] = self.get_keywords(stt)
 
     def add(self, audio_path, serializer):
         self.queue.append((audio_path, serializer))
 
     def transcribe(self, audio_path):
         stt = self.whisper_model.transcribe(audio_path)
-        return self.analyzer(stt['text'])
+        return self.analyzer(stt["text"])
 
     def get_keywords(self, text):
         nouns = self.okt.nouns(text)
         keywords = [x for x in nouns if len(x) > 1]
         return Counter(self.okt.nouns(keywords)).most_common(5)
+
 
 import time
 

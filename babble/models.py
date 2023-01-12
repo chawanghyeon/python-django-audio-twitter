@@ -1,4 +1,6 @@
 from django.db import models
+
+
 class User(models.Model):
     id = models.IntegerField(primary_key=True, unique=True)
     email = models.EmailField(unique=True)
@@ -20,7 +22,8 @@ class User(models.Model):
         return self.first_name
 
     def __str__(self):
-        return '%d %s' % (self.first_name, self.avatar)
+        return "%d %s" % (self.first_name, self.avatar)
+
 
 class Tag(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -30,10 +33,11 @@ class Tag(models.Model):
     def __unicode__(self):
         return self.text
 
+
 class Babble(models.Model):
     id = models.IntegerField(primary_key=True, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    reBable = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
+    reBable = models.ForeignKey("self", on_delete=models.CASCADE, null=True, blank=True)
     audio = models.FileField(upload_to="audio/%Y/%m/%d")
     duration = models.IntegerField(blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True, blank=True)
@@ -42,6 +46,7 @@ class Babble(models.Model):
 
     def __unicode__(self):
         return self.user.first_name
+
 
 class Comment(models.Model):
     id = models.IntegerField(primary_key=True, unique=True)
@@ -59,7 +64,9 @@ class Comment(models.Model):
 class Follower(models.Model):
     id = models.IntegerField(primary_key=True, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    following = models.ForeignKey(User, related_name="following", on_delete=models.CASCADE)
+    following = models.ForeignKey(
+        User, related_name="following", on_delete=models.CASCADE
+    )
     created = models.DateTimeField(auto_now_add=True)
 
     def __unicode__(self):
