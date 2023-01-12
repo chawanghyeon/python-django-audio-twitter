@@ -221,13 +221,13 @@ class LikeViewSet(viewsets.ModelViewSet):
         serializer = LikeSerializer(data=request.data)
 
         if serializer.is_valid():
-            serializer.save()
+            await serializer.save()
             return Response({'message': 'Like created successfully'}, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
     async def destroy(self, pk=None):
-        get_object_or_404(Like, pk=pk).delete()
+        await get_object_or_404(Like, pk=pk).delete()
         return Response({'message': 'Like deleted successfully'}, status=status.HTTP_200_OK)
 
 class TagViewSet(viewsets.ModelViewSet):
