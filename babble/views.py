@@ -238,7 +238,7 @@ class TagViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'])
     async def get_babbles_with_tag(self, pk=None):
-        tag = get_object_or_404(Tag, pk=pk)
-        babbles = get_list_or_404(Babble, tag=tag)
+        tag = await get_object_or_404(Tag, pk=pk)
+        babbles = await get_list_or_404(Babble, tag=tag)
         serializer = BabbleSerializer(babbles, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
