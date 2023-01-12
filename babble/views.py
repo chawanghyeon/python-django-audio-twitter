@@ -190,24 +190,24 @@ class FollowerViewSet(viewsets.ModelViewSet):
         serializer = FollowerSerializer(data=request.data)
 
         if serializer.is_valid():
-            serializer.save()
+            await serializer.save()
             return Response({'message': 'Follower created successfully'}, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
     async def destroy(self, pk=None):
-        get_object_or_404(Follower, pk=pk).delete()
+        await get_object_or_404(Follower, pk=pk).delete()
         return Response({'message': 'Follower deleted successfully'}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['get'], url_path='followings')
     async def get_followings(self, request):
-        follower = get_list_or_404(Follower, follower=request.user)
+        follower = await get_list_or_404(Follower, follower=request.user)
         serializer = FollowerSerializer(follower, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['get'], url_path='followers')
     async def get_followers(self, request):
-        follower = get_list_or_404(Follower, following=request.user)
+        follower = await get_list_or_404(Follower, following=request.user)
         serializer = FollowerSerializer(follower, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
