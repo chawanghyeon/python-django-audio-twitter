@@ -35,14 +35,14 @@ class STT(Thread):
             stt: str = self.transcribe(audio_path)
             serializer.data["tags"] = self.get_keywords(stt)
 
-    def add(self, audio_path, serializer) -> None:
+    def add(self, audio_path: str, serializer: Any) -> None:
         self.queue.append((audio_path, serializer))
 
-    def transcribe(self, audio_path) -> str:
+    def transcribe(self, audio_path: str) -> str:
         stt: Any = self.whisper_model.transcribe(audio_path)
         return self.analyzer(stt["text"])
 
-    def get_keywords(self, text) -> str:
+    def get_keywords(self, text: str) -> str:
         nouns: list[str] = self.okt.nouns(text)
         keywords: list[str] = [x for x in nouns if len(x) > 1]
         return Counter(self.okt.nouns(keywords)).most_common(5)
