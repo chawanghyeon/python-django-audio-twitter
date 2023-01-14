@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from collections import Counter, deque
 from threading import Thread
-from typing import Any
+from typing import Any, List
 
 import whisper
 from konlpy.tag import Okt
@@ -42,7 +42,7 @@ class STT(Thread):
         stt: Any = self.whisper_model.transcribe(audio_path)
         return self.analyzer(stt["text"])
 
-    def get_keywords(self, text: str) -> str:
+    def get_keywords(self, text: str) -> List[str]:
         nouns: list[str] = self.okt.nouns(text)
         keywords: list[str] = [x for x in nouns if len(x) > 1]
         return Counter(self.okt.nouns(keywords)).most_common(5)
