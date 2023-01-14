@@ -283,12 +283,12 @@ class FollowerViewSet(viewsets.ModelViewSet):
 
 class LikeViewSet(viewsets.ModelViewSet):
 
-    queryset = Like.objects.all()
-    serializer_class = LikeSerializer
-    permission_classes = (IsAuthenticated, IsOwnerOrReadOnly)
+    queryset: BaseManager[Like] = Like.objects.all()
+    serializer_class: Type[LikeSerializer] = LikeSerializer
+    permission_classes: tuple = (IsAuthenticated, IsOwnerOrReadOnly)
 
     async def create(self, request: HttpRequest) -> Response:
-        serializer = LikeSerializer(data=request.data)
+        serializer: LikeSerializer = LikeSerializer(data=request.data)
 
         if serializer.is_valid():
             await serializer.save()
