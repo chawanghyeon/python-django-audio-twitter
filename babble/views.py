@@ -246,12 +246,12 @@ class CommentViewSet(viewsets.ModelViewSet):
 
 class FollowerViewSet(viewsets.ModelViewSet):
 
-    queryset = Follower.objects.all()
-    serializer_class = FollowerSerializer
-    permission_classes = (IsAuthenticated, IsOwnerOrReadOnly)
+    queryset: BaseManager[Follower] = Follower.objects.all()
+    serializer_classz: Type[FollowerSerializer] = FollowerSerializer
+    permission_classes: tuple = (IsAuthenticated, IsOwnerOrReadOnly)
 
     async def create(self, request: HttpRequest) -> Response:
-        serializer = FollowerSerializer(data=request.data)
+        serializer: FollowerSerializer = FollowerSerializer(data=request.data)
 
         if serializer.is_valid():
             await serializer.save()
@@ -270,14 +270,14 @@ class FollowerViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["get"], url_path="followings")
     async def get_followings(self, request: HttpRequest) -> Response:
-        follower = get_list_or_404(Follower, follower=request.user)
-        serializer = FollowerSerializer(follower, many=True)
+        follower: List[Follower] = get_list_or_404(Follower, follower=request.user)
+        serializer: FollowerSerializer = FollowerSerializer(follower, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=["get"], url_path="followers")
     async def get_followers(self, request: HttpRequest) -> Response:
-        follower = get_list_or_404(Follower, following=request.user)
-        serializer = FollowerSerializer(follower, many=True)
+        follower: List[Follower] = get_list_or_404(Follower, following=request.user)
+        serializer: FollowerSerializer = FollowerSerializer(follower, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
