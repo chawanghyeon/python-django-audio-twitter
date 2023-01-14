@@ -307,13 +307,13 @@ class LikeViewSet(viewsets.ModelViewSet):
 
 class TagViewSet(viewsets.ModelViewSet):
 
-    queryset = Tag.objects.all()
-    serializer_class = TagSerializer
-    permission_classes = (IsAuthenticated, IsOwnerOrReadOnly)
+    queryset: BaseManager[Tag] = Tag.objects.all()
+    serializer_class: Type[TagSerializer] = TagSerializer
+    permission_classes: tuple = (IsAuthenticated, IsOwnerOrReadOnly)
 
     @action(detail=True, methods=["get"])
     async def get_babbles_with_tag(self, pk: Optional[int] = None) -> Response:
-        tag = get_object_or_404(Tag, pk=pk)
-        babbles = get_list_or_404(Babble, tag=tag)
-        serializer = BabbleSerializer(babbles, many=True)
+        tag: Tag = get_object_or_404(Tag, pk=pk)
+        babbles: List[Babble] = get_list_or_404(Babble, tag=tag)
+        serializer: BabbleSerializer = BabbleSerializer(babbles, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
