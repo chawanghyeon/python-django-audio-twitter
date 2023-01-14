@@ -1,5 +1,5 @@
 import asyncio
-from typing import Optional, Type
+from typing import List, Optional, Type
 
 from django.contrib.auth import authenticate
 from django.contrib.auth.base_user import AbstractBaseUser
@@ -134,11 +134,11 @@ class BabbleViewSet(viewsets.ModelViewSet):
 
     queryset: BaseManager[Babble] = Babble.objects.all()
     serializer_class: Type[BabbleSerializer] = BabbleSerializer
-    permission_classes: tuple[Type[IsAuthenticated], Type[IsOwnerOrReadOnly]] = (
+    permission_classes: tuple = (
         IsAuthenticated,
         IsOwnerOrReadOnly,
     )
-    parser_classes: tuple[Type[MultiPartParser]] = (MultiPartParser,)
+    parser_classes: tuple = (MultiPartParser,)
 
     async def create(self, request: HttpRequest) -> Response:
         request.data["audio"].name = request.user.id + "-" + "%y%m%d"
@@ -186,10 +186,13 @@ class BabbleViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
 
-    queryset = Comment.objects.all()
-    serializer_class = CommentSerializer
-    permission_classes = (IsAuthenticated, IsOwnerOrReadOnly)
-    parser_classes = (MultiPartParser,)
+    queryset: BaseManager[Comment] = Comment.objects.all()
+    serializer_class: Type[CommentSerializer] = CommentSerializer
+    permission_classes: tuple = (
+        IsAuthenticated,
+        IsOwnerOrReadOnly,
+    )
+    parser_classes: tuple = (MultiPartParser,)
 
     async def create(self, request: HttpRequest) -> Response:
         request.data["audio"].name = request.user.id + "-" + "%y%m%d"
@@ -206,9 +209,9 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     async def update(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
         # 오디오 분석 기능 추가
-        comment = get_object_or_404(Comment, pk=pk)
+        comment: Comment = get_object_or_404(Comment, pk=pk)
         request.data["audio"].name = request.user.id + "-" + "%y%m%d"
-        serializer = CommentSerializer(comment, data=request.data)
+        serializer: CommentSerializer = CommentSerializer(comment, data=request.data)
 
         if serializer.is_valid():
             await serializer.save()
@@ -225,13 +228,13 @@ class CommentViewSet(viewsets.ModelViewSet):
         )
 
     async def list(self, request: HttpRequest) -> Response:
-        babble = Babble.objects.get(user=request.user)
-        comments = get_list_or_404(Comment, babble=babble)
-        serializer = CommentSerializer(comments, many=True)
+        babble: Babble = Babble.objects.get(user=request.user)
+        comments: List[Comment] = get_list_or_404(Comment, babble=babble)
+        serializer: CommentSerializer = CommentSerializer(comments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     async def retrieve(self, pk: Optional[int] = None) -> FileResponse:
-        comment = get_object_or_404(Comment, pk=pk)
+        comment: Comment = get_object_or_404(Comment, pk=pk)
         comment.audio.open()
         return FileResponse(
             comment.audio,
