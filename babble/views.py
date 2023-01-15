@@ -36,7 +36,7 @@ class UserViewSet(viewsets.ModelViewSet):
         if pk is None:
             user: AbstractBaseUser | AnonymousUser = request.user
         else:
-            user: User = get_object_or_404(User, pk=pk)
+            user: User = await User.objects.get(pk=pk)
 
         if user:
             serializer: UserSerializer = UserSerializer(user)

@@ -11,7 +11,6 @@ from transformers.pipelines import Pipeline
 
 class STT:
     def __init__(self) -> None:
-        super().__init__(daemon=True)
         self.whisper_model: Any = whisper.load_model("large", device="cuda")
         self.tokenizer: Any = ElectraTokenizer.from_pretrained(
             "monologg/koelectra-base-finetuned-nsmc"
@@ -31,7 +30,7 @@ class STT:
         return self.analyzer(stt["text"])
 
     def analyze_sentiment(self, text: str) -> str:
-        return self.analyzer(text)[0]
+        return self.analyzer(text)[0]["label"]
 
     def get_keywords(self, audio_path: str) -> List[str]:
         while True:
