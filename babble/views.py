@@ -46,7 +46,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     async def update(self, request: HttpRequest) -> Response:
         if request.data.image:
-            request.data.image.name = request.user.id + "-" + "%y%m%d"
+            request.data.image.name = str(request.user.id) + "-" + "%y%m%d"
 
         serializer: UserSerializer = UserSerializer(request.user, data=request.data)
 
@@ -125,20 +125,6 @@ class UserViewSet(viewsets.ModelViewSet):
         )
 
 
-class AudioViewSet(viewsets.ModelViewSet):
-    queryset: BaseManager[Audio] = Audio.objects.all()
-    serializer_class: Type[AudioSerializer] = AudioSerializer
-    parser_classes: tuple = (MultiPartParser,)
-
-    async def create(self, request: HttpRequest) -> Response:
-        request.data["audio"].name = request.user.id + "-" + "%y%m%d"
-        serializer: AudioSerializer = AudioSerializer(data=request.data)
-        print(serializer)
-        return Response(
-            {"message": "Audio created successfully"}, status=status.HTTP_201_CREATED
-        )
-
-
 class BabbleViewSet(viewsets.ModelViewSet):
 
     queryset: BaseManager[Babble] = Babble.objects.all()
@@ -150,10 +136,11 @@ class BabbleViewSet(viewsets.ModelViewSet):
     parser_classes: tuple = (MultiPartParser,)
 
     async def create(self, request: HttpRequest) -> Response:
-        request.data["audio"].name = request.user.id + "-" + "%y%m%d"
+        request.data["audio"].name = str(request.user.id) + "-" + "%y%m%d"
         serializer: BabbleSerializer = BabbleSerializer(data=request.data)
-        # 오디오 분석 기능 추가
         if serializer.is_valid():
+            await serializer.save()
+            serializer.data.tags = stt.get_keywords(serializer.data.audio)
             await serializer.save()
             return Response(
                 {"message": "Babble created successfully"},
@@ -173,12 +160,13 @@ class BabbleViewSet(viewsets.ModelViewSet):
         )
 
     async def update(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
-        # 오디오 분석 기능 추가
         babble: Babble = get_object_or_404(Babble, pk=pk)
-        request.data["audio"].name = request.user.id + "-" + "%y%m%d"
+        request.data["audio"].name = str(request.user.id) + "-" + "%y%m%d"
         serializer: BabbleSerializer = BabbleSerializer(babble, data=request.data)
 
         if serializer.is_valid():
+            await serializer.save()
+            serializer.data.tags = stt.get_keywords(serializer.data.audio)
             await serializer.save()
             return Response(
                 {"message": "Babble updated successfully"}, status=status.HTTP_200_OK
@@ -204,10 +192,11 @@ class CommentViewSet(viewsets.ModelViewSet):
     parser_classes: tuple = (MultiPartParser,)
 
     async def create(self, request: HttpRequest) -> Response:
-        request.data["audio"].name = request.user.id + "-" + "%y%m%d"
-        serializer = CommentSerializer(data=request.data)
-        # 오디오 분석 기능 추가
+        request.data["audio"].name = str(request.user.id) + "-" + "%y%m%d"
+        serializer: CommentSerializer = CommentSerializer(data=request.data)
         if serializer.is_valid():
+            await serializer.save()
+            serializer.data.tags = stt.get_keywords(serializer.data.audio)
             await serializer.save()
             return Response(
                 {"message": "Comment created successfully"},
@@ -217,12 +206,13 @@ class CommentViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     async def update(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
-        # 오디오 분석 기능 추가
         comment: Comment = get_object_or_404(Comment, pk=pk)
-        request.data["audio"].name = request.user.id + "-" + "%y%m%d"
+        request.data["audio"].name = str(request.user.id) + "-" + "%y%m%d"
         serializer: CommentSerializer = CommentSerializer(comment, data=request.data)
 
         if serializer.is_valid():
+            await serializer.save()
+            serializer.data.tags = stt.get_keywords(serializer.data.audio)
             await serializer.save()
             return Response(
                 {"message": "Comment updated successfully"}, status=status.HTTP_200_OK
