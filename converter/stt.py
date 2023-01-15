@@ -31,7 +31,7 @@ class STT:
         return self.analyzer(stt["text"])
 
     def analyze_sentiment(self, text: str) -> str:
-        return self.analyzer(text)[0]
+        return self.analyzer(text)
 
     def get_keywords(self, audio_path: str) -> List[str]:
         while True:
@@ -46,3 +46,7 @@ class STT:
         nouns = [x for x in nouns if len(x) > 1]
         keywords += Counter(self.okt.nouns(nouns)).most_common(6)
         return keywords
+
+
+stt = STT()
+print(stt.analyze_sentiment("좋은 영화입니다."))
