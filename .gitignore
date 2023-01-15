@@ -3,3 +3,5 @@ __pycache__
 db.sqlite3
 .pre-commit-config.yaml
 .isort.cfg
+*.mp3
+media
