@@ -3,6 +3,13 @@ from rest_framework.serializers import CharField, ModelSerializer, StringRelated
 from .models import *
 
 
+class AudioSerializer(ModelSerializer):
+    class Meta:
+        fields: str = "__all__"
+        model: Audio = Audio
+        depth: int = 1
+
+
 class CommentSerializer(ModelSerializer):
     user: StringRelatedField = StringRelatedField(many=False)
 

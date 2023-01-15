@@ -1,6 +1,17 @@
 from django.db import models
 
 
+class Audio(models.Model):
+    id = models.IntegerField(primary_key=True, unique=True)
+    audio = models.FileField(upload_to="audio/%Y/%m/%d")
+    duration = models.IntegerField(blank=True, null=True)
+    created = models.DateTimeField(auto_now_add=True)
+    modified = models.DateTimeField(auto_now=True, blank=True, null=True)
+
+    def __unicode__(self):
+        return self.audio
+
+
 class User(models.Model):
     id = models.IntegerField(primary_key=True, unique=True)
     email = models.EmailField(unique=True)

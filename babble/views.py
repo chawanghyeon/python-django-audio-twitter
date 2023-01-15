@@ -125,6 +125,20 @@ class UserViewSet(viewsets.ModelViewSet):
         )
 
 
+class AudioViewSet(viewsets.ModelViewSet):
+    queryset: BaseManager[Audio] = Audio.objects.all()
+    serializer_class: Type[AudioSerializer] = AudioSerializer
+    parser_classes: tuple = (MultiPartParser,)
+
+    async def create(self, request: HttpRequest) -> Response:
+        request.data["audio"].name = request.user.id + "-" + "%y%m%d"
+        serializer: AudioSerializer = AudioSerializer(data=request.data)
+        print(serializer)
+        return Response(
+            {"message": "Audio created successfully"}, status=status.HTTP_201_CREATED
+        )
+
+
 class BabbleViewSet(viewsets.ModelViewSet):
 
     queryset: BaseManager[Babble] = Babble.objects.all()
