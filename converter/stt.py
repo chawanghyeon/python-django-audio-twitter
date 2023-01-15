@@ -11,7 +11,6 @@ from transformers.pipelines import Pipeline
 
 class STT:
     def __init__(self) -> None:
-        super().__init__(daemon=True)
         self.whisper_model: Any = whisper.load_model("large", device="cuda")
         self.tokenizer: Any = ElectraTokenizer.from_pretrained(
             "monologg/koelectra-base-finetuned-nsmc"
