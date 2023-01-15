@@ -30,7 +30,7 @@ class STT:
         return self.analyzer(stt["text"])
 
     def analyze_sentiment(self, text: str) -> str:
-        return self.analyzer(text)
+        return self.analyzer(text)[0]["label"]
 
     def get_keywords(self, audio_path: str) -> List[str]:
         while True:
