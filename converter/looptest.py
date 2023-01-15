@@ -20,9 +20,9 @@ from collections import Counter, deque
 
 import whisper
 from konlpy.tag import Okt
+
 # -*- coding: utf-8 -*-
-from transformers import (ElectraForSequenceClassification, ElectraTokenizer,
-                          pipeline)
+from transformers import ElectraForSequenceClassification, ElectraTokenizer, pipeline
 
 
 class STT:

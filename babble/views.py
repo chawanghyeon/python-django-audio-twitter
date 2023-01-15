@@ -21,11 +21,6 @@ from .serializers import *
 from .stt import STT
 
 stt: STT = STT()
-try:
-    stt.start()
-except:
-    stt = STT()
-    stt.start()
 
 
 class UserViewSet(viewsets.ModelViewSet):
