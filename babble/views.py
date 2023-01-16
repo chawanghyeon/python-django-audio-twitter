@@ -1,5 +1,7 @@
 import asyncio
-from typing import List, Optional, Type
+from lib2to3.pgen2 import token
+from typing import Any, List, Optional, Type
+from urllib import response
 
 from django.contrib.auth import authenticate
 from django.contrib.auth.base_user import AbstractBaseUser
@@ -11,12 +13,10 @@ from django.shortcuts import get_list_or_404, get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
-from rest_framework.parsers import MultiPartParser
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .models import *
-from .permissions import IsOwnerOrReadOnly
 from .serializers import *
 from .stt import STT
 
@@ -26,7 +26,6 @@ stt: STT = STT()
 class AuthViewSet(viewsets.GenericViewSet):
     queryset: BaseManager[User] = User.objects.all()
     serializer_class: Type[UserSerializer] = UserSerializer
-    permission_classes: tuple = (IsAuthenticated,)
 
     @action(detail=False, methods=["post"], url_name="signup")
     async def signup(self, request: HttpRequest) -> Response:
@@ -48,10 +47,20 @@ class AuthViewSet(viewsets.GenericViewSet):
         )
 
         if user:
-            token: Token
-            _: bool
-            token, _ = Token.objects.get_or_create(user=user)
-            return Response({"token": token.key}, status=status.HTTP_200_OK)
+            token: Any = TokenObtainPairSerializer.get_token(user)
+            refresh_token: str = str(token)
+            access_token: str = str(token.access_token)
+            response: Response = Response(
+                {
+                    "User": user,
+                    "message": "Login successfully",
+                    "token": {"refresh": refresh_token, "access": access_token},
+                },
+                status=status.HTTP_200_OK,
+            )
+            response.set_cookie(key="refresh_token", value=refresh_token)
+            response.set_cookie(key="access_token", value=access_token)
+            return response
 
         return Response(
             {"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED
@@ -84,8 +93,6 @@ class UserViewSet(viewsets.ModelViewSet):
 
     queryset: BaseManager[User] = User.objects.all()
     serializer_class: Type[UserSerializer] = UserSerializer
-    permission_classes: tuple = (IsAuthenticated, IsOwnerOrReadOnly)
-    parser_classes: tuple = (MultiPartParser,)
 
     async def retrieve(
         self, request: HttpRequest, pk: Optional[int] = None
@@ -135,11 +142,6 @@ class BabbleViewSet(viewsets.ModelViewSet):
 
     queryset: BaseManager[Babble] = Babble.objects.all()
     serializer_class: Type[BabbleSerializer] = BabbleSerializer
-    permission_classes: tuple = (
-        IsAuthenticated,
-        IsOwnerOrReadOnly,
-    )
-    parser_classes: tuple = (MultiPartParser,)
 
     async def create(self, request: HttpRequest) -> Response:
         request.data["audio"].name = str(request.user.id) + "-" + "%y%m%d"
@@ -191,11 +193,6 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     queryset: BaseManager[Comment] = Comment.objects.all()
     serializer_class: Type[CommentSerializer] = CommentSerializer
-    permission_classes: tuple = (
-        IsAuthenticated,
-        IsOwnerOrReadOnly,
-    )
-    parser_classes: tuple = (MultiPartParser,)
 
     async def create(self, request: HttpRequest) -> Response:
         request.data["audio"].name = str(request.user.id) + "-" + "%y%m%d"
@@ -253,7 +250,6 @@ class FollowerViewSet(viewsets.ModelViewSet):
 
     queryset: BaseManager[Follower] = Follower.objects.all()
     serializer_classz: Type[FollowerSerializer] = FollowerSerializer
-    permission_classes: tuple = (IsAuthenticated, IsOwnerOrReadOnly)
 
     async def create(self, request: HttpRequest) -> Response:
         serializer: FollowerSerializer = FollowerSerializer(data=request.data)
@@ -290,7 +286,6 @@ class LikeViewSet(viewsets.ModelViewSet):
 
     queryset: BaseManager[Like] = Like.objects.all()
     serializer_class: Type[LikeSerializer] = LikeSerializer
-    permission_classes: tuple = (IsAuthenticated, IsOwnerOrReadOnly)
 
     async def create(self, request: HttpRequest) -> Response:
         serializer: LikeSerializer = LikeSerializer(data=request.data)
@@ -314,7 +309,6 @@ class TagViewSet(viewsets.ModelViewSet):
 
     queryset: BaseManager[Tag] = Tag.objects.all()
     serializer_class: Type[TagSerializer] = TagSerializer
-    permission_classes: tuple = (IsAuthenticated, IsOwnerOrReadOnly)
 
     @action(detail=False, methods=["get"])
     async def get_babbles_with_tag(self, pk: Optional[int] = None) -> Response:
