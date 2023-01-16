@@ -26,11 +26,12 @@ from rest_framework.routers import DefaultRouter
 from babble import views
 
 router = DefaultRouter()
-router.register(r"users", views.UserViewSet, basename="user")
+router.register(r"user", views.UserViewSet, basename="user")
 router.register(r"babble", views.BabbleViewSet, basename="babble")
 router.register(r"comment", views.CommentViewSet, basename="comment")
 router.register(r"follower", views.FollowerViewSet, basename="follower")
 router.register(r"like", views.LikeViewSet, basename="like")
+router.register(r"auth", views.AuthViewSet, basename="auth")
 
 urlpatterns = [
     path("admin/", admin.site.urls),

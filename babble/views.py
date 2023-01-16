@@ -23,6 +23,63 @@ from .stt import STT
 stt: STT = STT()
 
 
+class AuthViewSet(viewsets.GenericViewSet):
+    queryset: BaseManager[User] = User.objects.all()
+    serializer_class: Type[UserSerializer] = UserSerializer
+    permission_classes: tuple = (IsAuthenticated,)
+
+    @action(detail=False, methods=["post"], url_name="signup")
+    async def signup(self, request: HttpRequest) -> Response:
+        serializer: UserSerializer = UserSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.password = make_password(serializer.password)
+            await serializer.save()
+            return Response(
+                {"message": "User created successfully"}, status=status.HTTP_201_CREATED
+            )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=["post"], url_name="signin")
+    async def signin(self, request: HttpRequest) -> Response:
+        user: AbstractBaseUser | None = authenticate(
+            username=request.data.get("username"), password=request.data.get("password")
+        )
+
+        if user:
+            token: Token
+            _: bool
+            token, _ = Token.objects.get_or_create(user=user)
+            return Response({"token": token.key}, status=status.HTTP_200_OK)
+
+        return Response(
+            {"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED
+        )
+
+    @action(detail=False, methods=["post"], url_name="logout")
+    async def logout(self, request: HttpRequest) -> Response:
+        await request.user.auth_token.delete()
+        return Response(
+            {"message": "Logged out successfully"}, status=status.HTTP_200_OK
+        )
+
+    @action(detail=False, methods=["post"], url_name="password")
+    async def update_password(self, request: HttpRequest) -> Response:
+        user: AbstractBaseUser | AnonymousUser = request.user
+
+        if user.check_password(request.data.get("old_password")):
+            user.password = make_password(request.data.get("new_password"))
+            await user.save()
+            return Response(
+                {"message": "Password updated successfully"}, status=status.HTTP_200_OK
+            )
+
+        return Response(
+            {"error": "Wrong password"}, status=status.HTTP_401_UNAUTHORIZED
+        )
+
+
 class UserViewSet(viewsets.ModelViewSet):
 
     queryset: BaseManager[User] = User.objects.all()
@@ -67,57 +124,6 @@ class UserViewSet(viewsets.ModelViewSet):
             await request.user.delete()
             return Response(
                 {"message": "User deleted successfully"}, status=status.HTTP_200_OK
-            )
-
-        return Response(
-            {"error": "Wrong password"}, status=status.HTTP_401_UNAUTHORIZED
-        )
-
-    @action(detail=True, methods=["post"], url_name="signup")
-    async def signup(self, request: HttpRequest) -> Response:
-        serializer: UserSerializer = UserSerializer(data=request.data)
-
-        if serializer.is_valid():
-            serializer.password = make_password(serializer.password)
-            await serializer.save()
-            return Response(
-                {"message": "User created successfully"}, status=status.HTTP_201_CREATED
-            )
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    @action(detail=True, methods=["post"], url_name="signin")
-    async def signin(self, request: HttpRequest) -> Response:
-        user: AbstractBaseUser | None = authenticate(
-            username=request.data.get("username"), password=request.data.get("password")
-        )
-
-        if user:
-            token: Token
-            _: bool
-            token, _ = Token.objects.get_or_create(user=user)
-            return Response({"token": token.key}, status=status.HTTP_200_OK)
-
-        return Response(
-            {"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED
-        )
-
-    @action(detail=True, methods=["post"], url_name="logout")
-    async def logout(self, request: HttpRequest) -> Response:
-        await request.user.auth_token.delete()
-        return Response(
-            {"message": "Logged out successfully"}, status=status.HTTP_200_OK
-        )
-
-    @action(detail=True, methods=["post"], url_name="password")
-    async def update_password(self, request: HttpRequest) -> Response:
-        user: AbstractBaseUser | AnonymousUser = request.user
-
-        if user.check_password(request.data.get("old_password")):
-            user.password = make_password(request.data.get("new_password"))
-            await user.save()
-            return Response(
-                {"message": "Password updated successfully"}, status=status.HTTP_200_OK
             )
 
         return Response(
@@ -267,13 +273,13 @@ class FollowerViewSet(viewsets.ModelViewSet):
             {"message": "Follower deleted successfully"}, status=status.HTTP_200_OK
         )
 
-    @action(detail=True, methods=["get"], url_path="followings")
+    @action(detail=False, methods=["get"], url_path="followings")
     async def get_followings(self, request: HttpRequest) -> Response:
         follower: List[Follower] = get_list_or_404(Follower, follower=request.user)
         serializer: FollowerSerializer = FollowerSerializer(follower, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=["get"], url_path="followers")
+    @action(detail=False, methods=["get"], url_path="followers")
     async def get_followers(self, request: HttpRequest) -> Response:
         follower: List[Follower] = get_list_or_404(Follower, following=request.user)
         serializer: FollowerSerializer = FollowerSerializer(follower, many=True)
@@ -310,7 +316,7 @@ class TagViewSet(viewsets.ModelViewSet):
     serializer_class: Type[TagSerializer] = TagSerializer
     permission_classes: tuple = (IsAuthenticated, IsOwnerOrReadOnly)
 
-    @action(detail=True, methods=["get"])
+    @action(detail=False, methods=["get"])
     async def get_babbles_with_tag(self, pk: Optional[int] = None) -> Response:
         tag: Tag = get_object_or_404(Tag, pk=pk)
         babbles: List[Babble] = get_list_or_404(Babble, tag=tag)
