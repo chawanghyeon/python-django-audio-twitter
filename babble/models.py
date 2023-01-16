@@ -1,14 +1,9 @@
+from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
-class User(models.Model):
+class User(AbstractUser):
     id = models.IntegerField(primary_key=True, unique=True)
-    email = models.EmailField(unique=True)
-    password = models.CharField(max_length=20)
-    first_name = models.CharField(max_length=20)
-    last_name = models.CharField(max_length=20)
-    created = models.DateTimeField(auto_now_add=True, blank=True)
-    modified = models.DateTimeField(auto_now=True, blank=True, null=True)
     birthday = models.DateTimeField(blank=True, null=True)
     image = models.ImageField(upload_to="image/%Y/%m/%d", blank=True, null=True)
     background = models.ImageField(upload_to="image/%Y/%m/%d", blank=True, null=True)
