@@ -32,6 +32,7 @@ router.register(r"comment", views.CommentViewSet, basename="comment")
 router.register(r"follower", views.FollowerViewSet, basename="follower")
 router.register(r"like", views.LikeViewSet, basename="like")
 router.register(r"auth", views.AuthViewSet, basename="auth")
+router.register(r"tag", views.TagViewSet, basename="tag")
 
 urlpatterns = [
     path("admin/", admin.site.urls),

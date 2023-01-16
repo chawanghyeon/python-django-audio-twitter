@@ -66,21 +66,6 @@ class AuthViewSet(viewsets.GenericViewSet):
             {"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED
         )
 
-    @action(detail=False, methods=["post"], url_name="password")
-    async def update_password(self, request: HttpRequest) -> Response:
-        user: AbstractBaseUser | AnonymousUser = request.user
-
-        if user.check_password(request.data.get("old_password")):
-            user.password = make_password(request.data.get("new_password"))
-            await user.save()
-            return Response(
-                {"message": "Password updated successfully"}, status=status.HTTP_200_OK
-            )
-
-        return Response(
-            {"error": "Wrong password"}, status=status.HTTP_401_UNAUTHORIZED
-        )
-
 
 class UserViewSet(viewsets.ModelViewSet):
 
@@ -124,6 +109,21 @@ class UserViewSet(viewsets.ModelViewSet):
             await request.user.delete()
             return Response(
                 {"message": "User deleted successfully"}, status=status.HTTP_200_OK
+            )
+
+        return Response(
+            {"error": "Wrong password"}, status=status.HTTP_401_UNAUTHORIZED
+        )
+
+    @action(detail=True, methods=["put"], url_name="password", url_path="password")
+    async def update_password(self, request: HttpRequest) -> Response:
+        user: AbstractBaseUser | AnonymousUser = request.user
+
+        if user.check_password(request.data.get("old_password")):
+            user.password = make_password(request.data.get("new_password"))
+            await user.save()
+            return Response(
+                {"message": "Password updated successfully"}, status=status.HTTP_200_OK
             )
 
         return Response(
@@ -303,8 +303,7 @@ class TagViewSet(viewsets.ModelViewSet):
     queryset: BaseManager[Tag] = Tag.objects.all()
     serializer_class: Type[TagSerializer] = TagSerializer
 
-    @action(detail=False, methods=["get"])
-    async def get_babbles_with_tag(self, pk: Optional[int] = None) -> Response:
+    async def retrieve(self, pk: Optional[int] = None) -> Response:
         tag: Tag = get_object_or_404(Tag, pk=pk)
         babbles: List[Babble] = get_list_or_404(Babble, tag=tag)
         serializer: BabbleSerializer = BabbleSerializer(babbles, many=True)

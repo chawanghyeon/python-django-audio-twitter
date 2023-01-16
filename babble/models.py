@@ -32,7 +32,9 @@ class Tag(models.Model):
 class Babble(models.Model):
     id = models.IntegerField(primary_key=True, unique=True, blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    reBable = models.ForeignKey("self", on_delete=models.CASCADE, null=True, blank=True)
+    reBabble = models.ForeignKey(
+        "self", on_delete=models.CASCADE, null=True, blank=True
+    )
     audio = models.FileField(upload_to="audio/%Y/%m/%d")
     duration = models.IntegerField(blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True, blank=True)
