@@ -66,13 +66,6 @@ class AuthViewSet(viewsets.GenericViewSet):
             {"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED
         )
 
-    @action(detail=False, methods=["post"], url_name="logout")
-    async def logout(self, request: HttpRequest) -> Response:
-        await request.user.auth_token.delete()
-        return Response(
-            {"message": "Logged out successfully"}, status=status.HTTP_200_OK
-        )
-
     @action(detail=False, methods=["post"], url_name="password")
     async def update_password(self, request: HttpRequest) -> Response:
         user: AbstractBaseUser | AnonymousUser = request.user
