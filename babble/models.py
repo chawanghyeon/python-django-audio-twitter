@@ -3,11 +3,11 @@ from django.db import models
 
 
 class User(AbstractUser):
-    id = models.IntegerField(primary_key=True, unique=True)
+    id = models.IntegerField(primary_key=True, unique=True, blank=True)
     birthday = models.DateTimeField(blank=True, null=True)
     image = models.ImageField(upload_to="image/%Y/%m/%d", blank=True, null=True)
     background = models.ImageField(upload_to="image/%Y/%m/%d", blank=True, null=True)
-    nickname = models.CharField(max_length=20, unique=True, blank=True)
+    nickname = models.CharField(max_length=20, blank=True)
     location = models.CharField(max_length=20, blank=True)
     phoneNumber = models.CharField(max_length=20, blank=True)
     gender = models.CharField(max_length=20, blank=True)
@@ -21,7 +21,7 @@ class User(AbstractUser):
 
 
 class Tag(models.Model):
-    id = models.IntegerField(primary_key=True)
+    id = models.IntegerField(primary_key=True, unique=True, blank=True)
     text = models.CharField(max_length=20)
     crated = models.DateTimeField(auto_now_add=True)
 
@@ -30,7 +30,7 @@ class Tag(models.Model):
 
 
 class Babble(models.Model):
-    id = models.IntegerField(primary_key=True, unique=True)
+    id = models.IntegerField(primary_key=True, unique=True, blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     reBable = models.ForeignKey("self", on_delete=models.CASCADE, null=True, blank=True)
     audio = models.FileField(upload_to="audio/%Y/%m/%d")
@@ -44,7 +44,7 @@ class Babble(models.Model):
 
 
 class Comment(models.Model):
-    id = models.IntegerField(primary_key=True, unique=True)
+    id = models.IntegerField(primary_key=True, unique=True, blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     babble = models.ForeignKey(Babble, on_delete=models.CASCADE)
     audio = models.FileField(upload_to="audio/%Y/%m/%d")
@@ -57,7 +57,7 @@ class Comment(models.Model):
 
 
 class Follower(models.Model):
-    id = models.IntegerField(primary_key=True, unique=True)
+    id = models.IntegerField(primary_key=True, unique=True, blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     following = models.ForeignKey(
         User, related_name="following", on_delete=models.CASCADE
@@ -69,7 +69,7 @@ class Follower(models.Model):
 
 
 class Like(models.Model):
-    id = models.IntegerField(primary_key=True, unique=True)
+    id = models.IntegerField(primary_key=True, unique=True, blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     babble = models.ForeignKey(Babble, on_delete=models.CASCADE)
     created = models.DateTimeField(auto_now_add=True)
