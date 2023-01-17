@@ -1,7 +1,5 @@
 import asyncio
-from lib2to3.pgen2 import token
 from typing import Any, List, Optional, Type
-from urllib import response
 
 from django.contrib.auth import authenticate
 from django.contrib.auth.base_user import AbstractBaseUser
@@ -11,7 +9,6 @@ from django.db.models.manager import BaseManager
 from django.http import FileResponse, HttpRequest
 from django.shortcuts import get_list_or_404, get_object_or_404
 from rest_framework import status, viewsets
-from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -151,8 +148,12 @@ class BabbleViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     async def retrieve(self, pk: Optional[int] = None) -> FileResponse:
-        babble: Babble = get_object_or_404(Babble, pk=pk)
-        babble.audio.open()
+        babble: Babble = await Babble.objects.get(Babble, pk=pk)
+        if babble is None:
+            return Response(
+                {"error": "Babble not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        await babble.audio.open()
         return FileResponse(
             babble.audio,
             as_attachment=True,
@@ -161,7 +162,11 @@ class BabbleViewSet(viewsets.ModelViewSet):
         )
 
     async def update(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
-        babble: Babble = get_object_or_404(Babble, pk=pk)
+        babble: Babble = await Babble.objects.get(Babble, pk=pk)
+        if babble is None:
+            return Response(
+                {"error": "Babble not found"}, status=status.HTTP_404_NOT_FOUND
+            )
         request.data["audio"].name = str(request.user.id) + "-" + "%y%m%d"
         serializer: BabbleSerializer = BabbleSerializer(babble, data=request.data)
 
@@ -176,7 +181,12 @@ class BabbleViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     async def destroy(self, pk: Optional[int] = None) -> Response:
-        get_object_or_404(Babble, pk=pk).delete()
+        babble: Babble = await Babble.objects.get(Babble, pk=pk)
+        if babble is None:
+            return Response(
+                {"error": "Babble not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        await babble.delete()
         return Response(
             {"message": "Babble deleted successfully"}, status=status.HTTP_200_OK
         )
@@ -202,7 +212,11 @@ class CommentViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     async def update(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
-        comment: Comment = get_object_or_404(Comment, pk=pk)
+        comment: Comment = await Comment.objects.get(Comment, pk=pk)
+        if comment is None:
+            return Response(
+                {"error": "Comment not found"}, status=status.HTTP_404_NOT_FOUND
+            )
         request.data["audio"].name = str(request.user.id) + "-" + "%y%m%d"
         serializer: CommentSerializer = CommentSerializer(comment, data=request.data)
 
@@ -217,20 +231,29 @@ class CommentViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     async def destroy(self, pk: Optional[int] = None) -> Response:
-        get_object_or_404(Comment, pk=pk).delete()
+        comment: Comment = await Comment.objects.get(Comment, pk=pk)
+        if comment is None:
+            return Response(
+                {"error": "Comment not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        await comment.delete()
         return Response(
             {"message": "Comment deleted successfully"}, status=status.HTTP_200_OK
         )
 
     async def list(self, request: HttpRequest) -> Response:
-        babble: Babble = Babble.objects.get(user=request.user)
-        comments: List[Comment] = get_list_or_404(Comment, babble=babble)
+        babble: Babble = await Babble.objects.get(user=request.user)
+        comments: List[Comment] = await self.queryset.filter(babble=babble)
         serializer: CommentSerializer = CommentSerializer(comments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     async def retrieve(self, pk: Optional[int] = None) -> FileResponse:
-        comment: Comment = get_object_or_404(Comment, pk=pk)
-        comment.audio.open()
+        comment: Comment = await Comment.objects.get(Comment, pk=pk)
+        if comment is None:
+            return Response(
+                {"error": "Comment not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        await comment.audio.open()
         return FileResponse(
             comment.audio,
             as_attachment=True,
@@ -257,20 +280,25 @@ class FollowerViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     async def destroy(self, pk: Optional[int] = None) -> Response:
-        get_object_or_404(Follower, pk=pk).delete()
+        follower: Follower = await Follower.objects.get(Follower, pk=pk)
+        if follower is None:
+            return Response(
+                {"error": "Follower not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        await follower.delete()
         return Response(
             {"message": "Follower deleted successfully"}, status=status.HTTP_200_OK
         )
 
     @action(detail=False, methods=["get"], url_path="followings")
     async def get_followings(self, request: HttpRequest) -> Response:
-        follower: List[Follower] = get_list_or_404(Follower, follower=request.user)
+        follower: List[Follower] = await self.queryset.filter(follower=request.user)
         serializer: FollowerSerializer = FollowerSerializer(follower, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=["get"], url_path="followers")
     async def get_followers(self, request: HttpRequest) -> Response:
-        follower: List[Follower] = get_list_or_404(Follower, following=request.user)
+        follower: List[Follower] = await self.queryset.filter(following=request.user)
         serializer: FollowerSerializer = FollowerSerializer(follower, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -292,7 +320,12 @@ class LikeViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     async def destroy(self, pk: Optional[int] = None) -> Response:
-        get_object_or_404(Like, pk=pk).delete()
+        like: Like = await Like.objects.get(Like, pk=pk)
+        if like is None:
+            return Response(
+                {"error": "Like not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        await like.delete()
         return Response(
             {"message": "Like deleted successfully"}, status=status.HTTP_200_OK
         )
@@ -304,7 +337,11 @@ class TagViewSet(viewsets.ModelViewSet):
     serializer_class: Type[TagSerializer] = TagSerializer
 
     async def retrieve(self, pk: Optional[int] = None) -> Response:
-        tag: Tag = get_object_or_404(Tag, pk=pk)
-        babbles: List[Babble] = get_list_or_404(Babble, tag=tag)
+        tag: Tag = await Tag.objects.get(Tag, pk=pk)
+        if tag is None:
+            return Response(
+                {"error": "Tag not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        babbles: List[Babble] = await Babble.objects.filter(tags=tag)
         serializer: BabbleSerializer = BabbleSerializer(babbles, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
