@@ -26,8 +26,8 @@ class LikeSerializer(ModelSerializer):
     user: StringRelatedField = StringRelatedField(many=False)
 
     class Meta:
+        fields: str = "__all__"
         model: Like = Like
-        exclude: tuple = ("babble",)
         depth: int = 1
 
 

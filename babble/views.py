@@ -7,13 +7,13 @@ from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import AnonymousUser
 from django.db.models.manager import BaseManager
 from django.http import FileResponse, HttpRequest
-from django.shortcuts import get_list_or_404, get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .models import *
+from .permissions import IsOwnerOrReadOnly
 from .serializers import *
 from .stt import STT
 
@@ -38,7 +38,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=["post"], url_name="signin")
-    async def signin(self, request: HttpRequest) -> Response:
+    def signin(self, request: HttpRequest) -> Response:
         user: AbstractBaseUser | None = authenticate(
             username=request.data.get("username"), password=request.data.get("password")
         )
@@ -49,14 +49,12 @@ class AuthViewSet(viewsets.GenericViewSet):
             access_token: str = str(token.access_token)
             response: Response = Response(
                 {
-                    "User": user,
+                    "user": user,
                     "message": "Login successfully",
                     "token": {"refresh": refresh_token, "access": access_token},
                 },
                 status=status.HTTP_200_OK,
             )
-            response.set_cookie(key="refresh_token", value=refresh_token)
-            response.set_cookie(key="access_token", value=access_token)
             return response
 
         return Response(
@@ -279,8 +277,11 @@ class FollowerViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    async def destroy(self, pk: Optional[int] = None) -> Response:
-        follower: Follower = await Follower.objects.get(Follower, pk=pk)
+    async def destroy(self, request, pk: Optional[int] = None) -> Response:
+        following: User = await User.objects.get(User, pk=pk)
+        follower: Follower = await Follower.objects.get(
+            Follower, User=request.user, following=following
+        )
         if follower is None:
             return Response(
                 {"error": "Follower not found"}, status=status.HTTP_404_NOT_FOUND
@@ -330,18 +331,29 @@ class LikeViewSet(viewsets.ModelViewSet):
             {"message": "Like deleted successfully"}, status=status.HTTP_200_OK
         )
 
+    async def list(self, request: HttpRequest, id: Optional[int] = None) -> Response:
+        user: User = await User.objects.get(User, pk=id)
+        if user is None:
+            return Response(
+                {"error": "User not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        likes: List[Like] = await self.queryset.filter(user=user)
+        serializer: LikeSerializer = LikeSerializer(likes, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 class TagViewSet(viewsets.ModelViewSet):
 
     queryset: BaseManager[Tag] = Tag.objects.all()
     serializer_class: Type[TagSerializer] = TagSerializer
 
-    async def retrieve(self, pk: Optional[int] = None) -> Response:
-        tag: Tag = await Tag.objects.get(Tag, pk=pk)
-        if tag is None:
+    @action(detail=False, methods=["get"], url_path="<str:tag>")
+    async def get_babbles_with_tag(self, tag: Optional[str] = None) -> Response:
+        tags: List[Tag] = await self.queryset.filter(text=tag)
+        if tags is None:
             return Response(
-                {"error": "Tag not found"}, status=status.HTTP_404_NOT_FOUND
+                {"error": "Tags not found"}, status=status.HTTP_404_NOT_FOUND
             )
-        babbles: List[Babble] = await Babble.objects.filter(tags=tag)
+        babbles: List[Babble] = await Babble.objects.filter(tags=tags)
         serializer: BabbleSerializer = BabbleSerializer(babbles, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
