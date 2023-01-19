@@ -1,4 +1,3 @@
-import asyncio
 from typing import Any, List, Optional, Type
 
 from django.contrib.auth import authenticate
@@ -23,14 +22,15 @@ stt: STT = STT()
 class AuthViewSet(viewsets.GenericViewSet):
     queryset: BaseManager[User] = User.objects.all()
     serializer_class: Type[UserSerializer] = UserSerializer
+    permission_classes: tuple = tuple()
 
     @action(detail=False, methods=["post"], url_name="signup")
-    async def signup(self, request: HttpRequest) -> Response:
+    def signup(self, request: HttpRequest) -> Response:
         serializer: UserSerializer = UserSerializer(data=request.data)
 
         if serializer.is_valid():
             serializer.password = make_password(serializer.password)
-            await serializer.save()
+            serializer.save()
             return Response(
                 {"message": "User created successfully"}, status=status.HTTP_201_CREATED
             )
@@ -67,13 +67,11 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset: BaseManager[User] = User.objects.all()
     serializer_class: Type[UserSerializer] = UserSerializer
 
-    async def retrieve(
-        self, request: HttpRequest, pk: Optional[int] = None
-    ) -> Response:
+    def retrieve(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
         if pk is None:
             user: AbstractBaseUser | AnonymousUser = request.user
         else:
-            user: User = await User.objects.get(pk=pk)
+            user: User = User.objects.get(pk=pk)
 
         if user:
             serializer: UserSerializer = UserSerializer(user)
@@ -81,27 +79,27 @@ class UserViewSet(viewsets.ModelViewSet):
 
         return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    async def update(self, request: HttpRequest) -> Response:
+    def update(self, request: HttpRequest) -> Response:
         if request.data.image:
             request.data.image.name = str(request.user.id) + "-" + "%y%m%d"
 
         serializer: UserSerializer = UserSerializer(request.user, data=request.data)
 
         if serializer.is_valid():
-            await serializer.save()
+            serializer.save()
             return Response(
                 {"message": "User updated successfully"}, status=status.HTTP_200_OK
             )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    async def destroy(self, request: HttpRequest) -> Response:
+    def destroy(self, request: HttpRequest) -> Response:
         check: AbstractBaseUser | None = authenticate(
             username=request.user.username, password=request.data.get("password")
         )
 
         if check:
-            await request.user.delete()
+            request.user.delete()
             return Response(
                 {"message": "User deleted successfully"}, status=status.HTTP_200_OK
             )
@@ -111,12 +109,12 @@ class UserViewSet(viewsets.ModelViewSet):
         )
 
     @action(detail=True, methods=["put"], url_name="password", url_path="password")
-    async def update_password(self, request: HttpRequest) -> Response:
+    def update_password(self, request: HttpRequest) -> Response:
         user: AbstractBaseUser | AnonymousUser = request.user
 
         if user.check_password(request.data.get("old_password")):
             user.password = make_password(request.data.get("new_password"))
-            await user.save()
+            user.save()
             return Response(
                 {"message": "Password updated successfully"}, status=status.HTTP_200_OK
             )
@@ -131,13 +129,13 @@ class BabbleViewSet(viewsets.ModelViewSet):
     queryset: BaseManager[Babble] = Babble.objects.all()
     serializer_class: Type[BabbleSerializer] = BabbleSerializer
 
-    async def create(self, request: HttpRequest) -> Response:
+    def create(self, request: HttpRequest) -> Response:
         request.data["audio"].name = str(request.user.id) + "-" + "%y%m%d"
         serializer: BabbleSerializer = BabbleSerializer(data=request.data)
         if serializer.is_valid():
-            await serializer.save()
+            serializer.save()
             serializer.data.tags = stt.get_keywords(serializer.data.audio)
-            await serializer.save()
+            serializer.save()
             return Response(
                 {"message": "Babble created successfully"},
                 status=status.HTTP_201_CREATED,
@@ -145,13 +143,13 @@ class BabbleViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    async def retrieve(self, pk: Optional[int] = None) -> FileResponse:
-        babble: Babble = await Babble.objects.get(Babble, pk=pk)
+    def retrieve(self, pk: Optional[int] = None) -> FileResponse:
+        babble: Babble = Babble.objects.get(Babble, pk=pk)
         if babble is None:
             return Response(
                 {"error": "Babble not found"}, status=status.HTTP_404_NOT_FOUND
             )
-        await babble.audio.open()
+        babble.audio.open()
         return FileResponse(
             babble.audio,
             as_attachment=True,
@@ -159,8 +157,8 @@ class BabbleViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK,
         )
 
-    async def update(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
-        babble: Babble = await Babble.objects.get(Babble, pk=pk)
+    def update(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
+        babble: Babble = Babble.objects.get(Babble, pk=pk)
         if babble is None:
             return Response(
                 {"error": "Babble not found"}, status=status.HTTP_404_NOT_FOUND
@@ -169,22 +167,22 @@ class BabbleViewSet(viewsets.ModelViewSet):
         serializer: BabbleSerializer = BabbleSerializer(babble, data=request.data)
 
         if serializer.is_valid():
-            await serializer.save()
+            serializer.save()
             serializer.data.tags = stt.get_keywords(serializer.data.audio)
-            await serializer.save()
+            serializer.save()
             return Response(
                 {"message": "Babble updated successfully"}, status=status.HTTP_200_OK
             )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    async def destroy(self, pk: Optional[int] = None) -> Response:
-        babble: Babble = await Babble.objects.get(Babble, pk=pk)
+    def destroy(self, pk: Optional[int] = None) -> Response:
+        babble: Babble = Babble.objects.get(Babble, pk=pk)
         if babble is None:
             return Response(
                 {"error": "Babble not found"}, status=status.HTTP_404_NOT_FOUND
             )
-        await babble.delete()
+        babble.delete()
         return Response(
             {"message": "Babble deleted successfully"}, status=status.HTTP_200_OK
         )
@@ -195,13 +193,13 @@ class CommentViewSet(viewsets.ModelViewSet):
     queryset: BaseManager[Comment] = Comment.objects.all()
     serializer_class: Type[CommentSerializer] = CommentSerializer
 
-    async def create(self, request: HttpRequest) -> Response:
+    def create(self, request: HttpRequest) -> Response:
         request.data["audio"].name = str(request.user.id) + "-" + "%y%m%d"
         serializer: CommentSerializer = CommentSerializer(data=request.data)
         if serializer.is_valid():
-            await serializer.save()
+            serializer.save()
             serializer.data.tags = stt.get_keywords(serializer.data.audio)
-            await serializer.save()
+            serializer.save()
             return Response(
                 {"message": "Comment created successfully"},
                 status=status.HTTP_201_CREATED,
@@ -209,8 +207,8 @@ class CommentViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    async def update(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
-        comment: Comment = await Comment.objects.get(Comment, pk=pk)
+    def update(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
+        comment: Comment = Comment.objects.get(Comment, pk=pk)
         if comment is None:
             return Response(
                 {"error": "Comment not found"}, status=status.HTTP_404_NOT_FOUND
@@ -219,39 +217,39 @@ class CommentViewSet(viewsets.ModelViewSet):
         serializer: CommentSerializer = CommentSerializer(comment, data=request.data)
 
         if serializer.is_valid():
-            await serializer.save()
+            serializer.save()
             serializer.data.tags = stt.get_keywords(serializer.data.audio)
-            await serializer.save()
+            serializer.save()
             return Response(
                 {"message": "Comment updated successfully"}, status=status.HTTP_200_OK
             )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    async def destroy(self, pk: Optional[int] = None) -> Response:
-        comment: Comment = await Comment.objects.get(Comment, pk=pk)
+    def destroy(self, pk: Optional[int] = None) -> Response:
+        comment: Comment = Comment.objects.get(Comment, pk=pk)
         if comment is None:
             return Response(
                 {"error": "Comment not found"}, status=status.HTTP_404_NOT_FOUND
             )
-        await comment.delete()
+        comment.delete()
         return Response(
             {"message": "Comment deleted successfully"}, status=status.HTTP_200_OK
         )
 
-    async def list(self, request: HttpRequest) -> Response:
-        babble: Babble = await Babble.objects.get(user=request.user)
-        comments: List[Comment] = await self.queryset.filter(babble=babble)
+    def list(self, request: HttpRequest) -> Response:
+        babble: Babble = Babble.objects.get(user=request.user)
+        comments: List[Comment] = self.queryset.filter(babble=babble)
         serializer: CommentSerializer = CommentSerializer(comments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    async def retrieve(self, pk: Optional[int] = None) -> FileResponse:
-        comment: Comment = await Comment.objects.get(Comment, pk=pk)
+    def retrieve(self, pk: Optional[int] = None) -> FileResponse:
+        comment: Comment = Comment.objects.get(Comment, pk=pk)
         if comment is None:
             return Response(
                 {"error": "Comment not found"}, status=status.HTTP_404_NOT_FOUND
             )
-        await comment.audio.open()
+        comment.audio.open()
         return FileResponse(
             comment.audio,
             as_attachment=True,
@@ -265,11 +263,11 @@ class FollowerViewSet(viewsets.ModelViewSet):
     queryset: BaseManager[Follower] = Follower.objects.all()
     serializer_classz: Type[FollowerSerializer] = FollowerSerializer
 
-    async def create(self, request: HttpRequest) -> Response:
+    def create(self, request: HttpRequest) -> Response:
         serializer: FollowerSerializer = FollowerSerializer(data=request.data)
 
         if serializer.is_valid():
-            await serializer.save()
+            serializer.save()
             return Response(
                 {"message": "Follower created successfully"},
                 status=status.HTTP_201_CREATED,
@@ -277,29 +275,29 @@ class FollowerViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    async def destroy(self, request, pk: Optional[int] = None) -> Response:
-        following: User = await User.objects.get(User, pk=pk)
-        follower: Follower = await Follower.objects.get(
+    def destroy(self, request, pk: Optional[int] = None) -> Response:
+        following: User = User.objects.get(User, pk=pk)
+        follower: Follower = Follower.objects.get(
             Follower, User=request.user, following=following
         )
         if follower is None:
             return Response(
                 {"error": "Follower not found"}, status=status.HTTP_404_NOT_FOUND
             )
-        await follower.delete()
+        follower.delete()
         return Response(
             {"message": "Follower deleted successfully"}, status=status.HTTP_200_OK
         )
 
     @action(detail=False, methods=["get"], url_path="followings")
-    async def get_followings(self, request: HttpRequest) -> Response:
-        follower: List[Follower] = await self.queryset.filter(follower=request.user)
+    def get_followings(self, request: HttpRequest) -> Response:
+        follower: List[Follower] = self.queryset.filter(follower=request.user)
         serializer: FollowerSerializer = FollowerSerializer(follower, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=["get"], url_path="followers")
-    async def get_followers(self, request: HttpRequest) -> Response:
-        follower: List[Follower] = await self.queryset.filter(following=request.user)
+    def get_followers(self, request: HttpRequest) -> Response:
+        follower: List[Follower] = self.queryset.filter(following=request.user)
         serializer: FollowerSerializer = FollowerSerializer(follower, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -309,35 +307,35 @@ class LikeViewSet(viewsets.ModelViewSet):
     queryset: BaseManager[Like] = Like.objects.all()
     serializer_class: Type[LikeSerializer] = LikeSerializer
 
-    async def create(self, request: HttpRequest) -> Response:
+    def create(self, request: HttpRequest) -> Response:
         serializer: LikeSerializer = LikeSerializer(data=request.data)
 
         if serializer.is_valid():
-            await serializer.save()
+            serializer.save()
             return Response(
                 {"message": "Like created successfully"}, status=status.HTTP_201_CREATED
             )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    async def destroy(self, pk: Optional[int] = None) -> Response:
-        like: Like = await Like.objects.get(Like, pk=pk)
+    def destroy(self, pk: Optional[int] = None) -> Response:
+        like: Like = Like.objects.get(Like, pk=pk)
         if like is None:
             return Response(
                 {"error": "Like not found"}, status=status.HTTP_404_NOT_FOUND
             )
-        await like.delete()
+        like.delete()
         return Response(
             {"message": "Like deleted successfully"}, status=status.HTTP_200_OK
         )
 
-    async def list(self, request: HttpRequest, id: Optional[int] = None) -> Response:
-        user: User = await User.objects.get(User, pk=id)
+    def list(self, request: HttpRequest, id: Optional[int] = None) -> Response:
+        user: User = User.objects.get(User, pk=id)
         if user is None:
             return Response(
                 {"error": "User not found"}, status=status.HTTP_404_NOT_FOUND
             )
-        likes: List[Like] = await self.queryset.filter(user=user)
+        likes: List[Like] = self.queryset.filter(user=user)
         serializer: LikeSerializer = LikeSerializer(likes, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -348,12 +346,12 @@ class TagViewSet(viewsets.ModelViewSet):
     serializer_class: Type[TagSerializer] = TagSerializer
 
     @action(detail=False, methods=["get"], url_path="<str:tag>")
-    async def get_babbles_with_tag(self, tag: Optional[str] = None) -> Response:
-        tags: List[Tag] = await self.queryset.filter(text=tag)
+    def get_babbles_with_tag(self, tag: Optional[str] = None) -> Response:
+        tags: List[Tag] = self.queryset.filter(text=tag)
         if tags is None:
             return Response(
                 {"error": "Tags not found"}, status=status.HTTP_404_NOT_FOUND
             )
-        babbles: List[Babble] = await Babble.objects.filter(tags=tags)
+        babbles: List[Babble] = Babble.objects.filter(tags=tags)
         serializer: BabbleSerializer = BabbleSerializer(babbles, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
