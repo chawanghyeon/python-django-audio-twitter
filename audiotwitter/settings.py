@@ -165,3 +165,7 @@ CORS_ORIGIN_ALLOW_ALL = True
 REST_USE_JWT = True
 
 AUTH_USER_MODEL = "babble.User"
+
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+]

@@ -41,14 +41,14 @@ class AuthViewSet(viewsets.GenericViewSet):
         user: AbstractBaseUser | None = authenticate(
             username=request.data.get("username"), password=request.data.get("password")
         )
-
+        serializer: UserSerializer = UserSerializer(user)
         if user:
             token: Any = TokenObtainPairSerializer.get_token(user)
             refresh_token: str = str(token)
             access_token: str = str(token.access_token)
             response: Response = Response(
                 {
-                    "user": user,
+                    "user": serializer.data,
                     "message": "Login successfully",
                     "token": {"refresh": refresh_token, "access": access_token},
                 },

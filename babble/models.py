@@ -17,7 +17,7 @@ class User(AbstractUser):
         return self.first_name
 
     def __str__(self):
-        return "%d %s" % (self.first_name, self.image)
+        return self.first_name
 
 
 class Tag(models.Model):
