@@ -12,7 +12,6 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .models import *
-from .permissions import IsOwnerOrReadOnly
 from .serializers import *
 from .stt import STT
 
@@ -29,7 +28,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         serializer: UserSerializer = UserSerializer(data=request.data)
 
         if serializer.is_valid():
-            serializer.password = make_password(serializer.password)
+            serializer.data["password"] = make_password(serializer.data.get("password"))
             serializer.save()
             return Response(
                 {"message": "User created successfully"}, status=status.HTTP_201_CREATED
@@ -80,8 +79,8 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
     def update(self, request: HttpRequest) -> Response:
-        if request.data.image:
-            request.data.image.name = str(request.user.id) + "-" + "%y%m%d"
+        if request.data["image"]:
+            request.data["image"].name = str(request.user.id) + "-" + "%y%m%d"
 
         serializer: UserSerializer = UserSerializer(request.user, data=request.data)
 
@@ -134,7 +133,7 @@ class BabbleViewSet(viewsets.ModelViewSet):
         serializer: BabbleSerializer = BabbleSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            serializer.data.tags = stt.get_keywords(serializer.data.audio)
+            serializer.data["tags"] = stt.get_keywords(serializer.data.get("audio"))
             serializer.save()
             return Response(
                 {"message": "Babble created successfully"},
@@ -168,7 +167,7 @@ class BabbleViewSet(viewsets.ModelViewSet):
 
         if serializer.is_valid():
             serializer.save()
-            serializer.data.tags = stt.get_keywords(serializer.data.audio)
+            serializer.data["tags"] = stt.get_keywords(serializer.data.get("audio"))
             serializer.save()
             return Response(
                 {"message": "Babble updated successfully"}, status=status.HTTP_200_OK
@@ -198,7 +197,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         serializer: CommentSerializer = CommentSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            serializer.data.tags = stt.get_keywords(serializer.data.audio)
+            serializer.data["tags"] = stt.get_keywords(serializer.data.get("audio"))
             serializer.save()
             return Response(
                 {"message": "Comment created successfully"},
@@ -218,7 +217,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 
         if serializer.is_valid():
             serializer.save()
-            serializer.data.tags = stt.get_keywords(serializer.data.audio)
+            serializer.data["tags"] = stt.get_keywords(serializer.data.get("audio"))
             serializer.save()
             return Response(
                 {"message": "Comment updated successfully"}, status=status.HTTP_200_OK
