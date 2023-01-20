@@ -25,10 +25,10 @@ class AuthViewSet(viewsets.GenericViewSet):
 
     @action(detail=False, methods=["post"], url_name="signup")
     def signup(self, request: HttpRequest) -> Response:
+        request.data["password"] = make_password(request.data.get("password"))
         serializer: UserSerializer = UserSerializer(data=request.data)
 
         if serializer.is_valid():
-            serializer.data["password"] = make_password(serializer.data.get("password"))
             serializer.save()
             return Response(
                 {"message": "User created successfully"}, status=status.HTTP_201_CREATED
