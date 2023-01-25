@@ -12,6 +12,8 @@ class User(AbstractUser):
     number = models.CharField(max_length=20, blank=True)
     gender = models.CharField(max_length=20, blank=True)
     bio = models.CharField(max_length=140, blank=True)
+    followers = models.IntegerField(default=0)
+    followings = models.IntegerField(default=0)
 
     def __unicode__(self):
         return self.first_name

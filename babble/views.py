@@ -4,6 +4,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import AnonymousUser
+from django.db import DatabaseError, transaction
 from django.db.models.manager import BaseManager
 from django.http import FileResponse, HttpRequest
 from rest_framework import status, viewsets
@@ -266,7 +267,22 @@ class FollowerViewSet(viewsets.ModelViewSet):
         serializer: FollowerSerializer = FollowerSerializer(data=request.data)
 
         if serializer.is_valid():
-            serializer.save()
+            try:
+                with transaction.atomic():
+                    serializer.save()
+                    user: User = User.objects.get(User, pk=request.data.get("user"))
+                    following: User = User.objects.get(
+                        User, pk=request.data.get("following")
+                    )
+                    user.following += 1
+                    following.followers += 1
+                    user.save()
+                    following.save()
+            except DatabaseError:
+                return Response(
+                    {"error": "Cancle follower"}, status=status.HTTP_409_CONFLICT
+                )
+
             return Response(
                 {"message": "Follower created successfully"},
                 status=status.HTTP_201_CREATED,
