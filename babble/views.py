@@ -299,7 +299,18 @@ class FollowerViewSet(viewsets.ModelViewSet):
             return Response(
                 {"error": "Follower not found"}, status=status.HTTP_404_NOT_FOUND
             )
-        follower.delete()
+        try:
+            with transaction.atomic():
+                follower.delete()
+                request.user.following -= 1
+                following.followers -= 1
+                request.user.save()
+                following.save()
+        except DatabaseError:
+            return Response(
+                {"error": "Cancle follower"}, status=status.HTTP_409_CONFLICT
+            )
+
         return Response(
             {"message": "Follower deleted successfully"}, status=status.HTTP_200_OK
         )
