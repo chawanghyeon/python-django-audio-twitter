@@ -5,6 +5,7 @@ from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import AnonymousUser
 from django.db import DatabaseError, transaction
+from django.db.models import F, Q
 from django.db.models.manager import BaseManager
 from django.http import FileResponse, HttpRequest
 from rest_framework import status, viewsets
@@ -105,22 +106,12 @@ class UserViewSet(viewsets.ModelViewSet):
 
         try:
             with transaction.atomic():
-                followers: BaseManager[Follower] = Follower.objects.filter(user=check)
-                users = []
-
-                for follower in followers:
-                    follower.following.followers -= 1
-                    users.append(follower.following)
-
-                followers: BaseManager[Follower] = Follower.objects.filter(
-                    following=check
+                User.objects.filter(follower__user=check).update(
+                    followers=F("followers") - 1
                 )
-
-                for follower in followers:
-                    follower.user.followings -= 1
-                    users.append(follower.user)
-
-                User.objects.bulk_update(users, ["followers", "followings"])
+                User.objects.filter(follower__following=check).update(
+                    following=F("following") - 1
+                )
                 check.delete()
 
             return Response(
