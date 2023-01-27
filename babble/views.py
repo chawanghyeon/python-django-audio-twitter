@@ -98,15 +98,39 @@ class UserViewSet(viewsets.ModelViewSet):
             username=request.user.username, password=request.data.get("password")
         )
 
-        if check:
-            request.user.delete()
+        if check == None:
+            return Response(
+                {"error": "Wrong password"}, status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        try:
+            with transaction.atomic():
+                followers: BaseManager[Follower] = Follower.objects.filter(user=check)
+                users = []
+
+                for follower in followers:
+                    follower.following.followers -= 1
+                    users.append(follower.following)
+
+                followers: BaseManager[Follower] = Follower.objects.filter(
+                    following=check
+                )
+
+                for follower in followers:
+                    follower.user.followings -= 1
+                    users.append(follower.user)
+
+                User.objects.bulk_update(users, ["followers", "followings"])
+                check.delete()
+
             return Response(
                 {"message": "User deleted successfully"}, status=status.HTTP_200_OK
             )
-
-        return Response(
-            {"error": "Wrong password"}, status=status.HTTP_401_UNAUTHORIZED
-        )
+        except DatabaseError:
+            return Response(
+                {"error": "Something went wrong"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     @action(detail=True, methods=["put"], url_name="password", url_path="password")
     def update_password(self, request: HttpRequest) -> Response:
