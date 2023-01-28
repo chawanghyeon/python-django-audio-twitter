@@ -12,8 +12,8 @@ class User(AbstractUser):
     number = models.CharField(max_length=20, blank=True)
     gender = models.CharField(max_length=20, blank=True)
     bio = models.CharField(max_length=140, blank=True)
-    followers = models.IntegerField(default=0)
-    followings = models.IntegerField(default=0)
+    follower_count = models.IntegerField(default=0)
+    following_count = models.IntegerField(default=0)
 
     def __unicode__(self):
         return self.first_name
@@ -34,12 +34,15 @@ class Tag(models.Model):
 class Babble(models.Model):
     id = models.IntegerField(primary_key=True, unique=True, blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    reBabble = models.ForeignKey("self", on_delete=models.CASCADE, blank=True)
+    rebabble = models.ForeignKey("self", on_delete=models.CASCADE, blank=True)
     audio = models.FileField(upload_to="audio/%Y/%m/%d", blank=True)
     duration = models.IntegerField(blank=True)
     created = models.DateTimeField(auto_now_add=True, blank=True)
     modified = models.DateTimeField(auto_now=True, blank=True)
     tags = models.ManyToManyField(Tag, blank=True)
+    like_count = models.IntegerField(default=0)
+    comment_count = models.IntegerField(default=0)
+    rebabble_count = models.IntegerField(default=0)
 
     def __unicode__(self):
         return self.user.first_name
