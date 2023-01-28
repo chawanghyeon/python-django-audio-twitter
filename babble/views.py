@@ -65,7 +65,7 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset: BaseManager[User] = User.objects.all()
     serializer_class: Type[UserSerializer] = UserSerializer
 
-    def retrieve(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
+    def retrieve(self, pk: Optional[int] = None) -> Response:
         user: User = User.objects.get(pk=pk)
 
         if user == None:
@@ -109,15 +109,15 @@ class UserViewSet(viewsets.ModelViewSet):
                     following=F("following") - 1
                 )
                 check.delete()
-
-            return Response(
-                {"message": "User deleted successfully"}, status=status.HTTP_200_OK
-            )
         except DatabaseError:
             return Response(
                 {"error": "Something went wrong"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+        return Response(
+            {"message": "User deleted successfully"}, status=status.HTTP_200_OK
+        )
 
     @action(detail=True, methods=["put"], url_name="password", url_path="password")
     def update_password(self, request: HttpRequest) -> Response:
@@ -130,6 +130,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
         user.password = make_password(request.data.get("new_password"))
         user.save()
+
         return Response(
             {"message": "Password updated successfully"}, status=status.HTTP_200_OK
         )
@@ -142,12 +143,21 @@ class BabbleViewSet(viewsets.ModelViewSet):
     def create(self, request: HttpRequest) -> Response:
         request.data["audio"].name = str(request.user.id) + "-" + "%y%m%d"
         serializer: BabbleSerializer = BabbleSerializer(data=request.data)
+
         if serializer.is_valid() == False:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer.save()
-        serializer.data["tags"] = stt.get_keywords(serializer.data.get("audio"))
-        serializer.save()
+        try:
+            with transaction.atomic():
+                serializer.save()
+                serializer.data["tags"] = stt.get_keywords(serializer.data.get("audio"))
+                serializer.save()
+        except DatabaseError:
+            return Response(
+                {"error": "Something went wrong"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
         return Response(
             {"message": "Babble created successfully"},
             status=status.HTTP_201_CREATED,
@@ -155,6 +165,7 @@ class BabbleViewSet(viewsets.ModelViewSet):
 
     def retrieve(self, pk: Optional[int] = None) -> FileResponse:
         babble: Babble = Babble.objects.get(Babble, pk=pk)
+
         if babble is None:
             return Response(
                 {"error": "Babble not found"}, status=status.HTTP_404_NOT_FOUND
@@ -171,19 +182,29 @@ class BabbleViewSet(viewsets.ModelViewSet):
 
     def update(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
         babble: Babble = Babble.objects.get(Babble, pk=pk)
+
         if babble is None:
             return Response(
                 {"error": "Babble not found"}, status=status.HTTP_404_NOT_FOUND
             )
+
         request.data["audio"].name = str(request.user.id) + "-" + "%y%m%d"
         serializer: BabbleSerializer = BabbleSerializer(babble, data=request.data)
 
         if serializer.is_valid() == False:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer.save()
-        serializer.data["tags"] = stt.get_keywords(serializer.data.get("audio"))
-        serializer.save()
+        try:
+            with transaction.atomic():
+                serializer.save()
+                serializer.data["tags"] = stt.get_keywords(serializer.data.get("audio"))
+                serializer.save()
+        except DatabaseError:
+            return Response(
+                {"error": "Something went wrong"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
         return Response(
             {"message": "Babble updated successfully"}, status=status.HTTP_200_OK
         )
