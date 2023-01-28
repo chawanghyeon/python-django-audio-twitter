@@ -27,58 +27,54 @@ class AuthViewSet(viewsets.GenericViewSet):
 
     @action(detail=False, methods=["post"], url_name="signup")
     def signup(self, request: HttpRequest) -> Response:
-        request.data["password"] = make_password(request.data.get("password"))
         serializer: UserSerializer = UserSerializer(data=request.data)
 
-        if serializer.is_valid():
-            serializer.save()
-            return Response(
-                {"message": "User created successfully"}, status=status.HTTP_201_CREATED
-            )
+        if serializer.is_valid() == False:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return Response(
+            {"message": "User created successfully"}, status=status.HTTP_201_CREATED
+        )
 
     @action(detail=False, methods=["post"], url_name="signin")
     def signin(self, request: HttpRequest) -> Response:
         user: AbstractBaseUser | None = authenticate(
             username=request.data.get("username"), password=request.data.get("password")
         )
-        serializer: UserSerializer = UserSerializer(user)
-        if user:
-            token: Any = TokenObtainPairSerializer.get_token(user)
-            refresh_token: str = str(token)
-            access_token: str = str(token.access_token)
-            response: Response = Response(
-                {
-                    "user": serializer.data,
-                    "message": "Login successfully",
-                    "token": {"refresh": refresh_token, "access": access_token},
-                },
-                status=status.HTTP_200_OK,
+
+        if user == None:
+            return Response(
+                {"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED
             )
-            return response
+
+        serializer: UserSerializer = UserSerializer(user)
+        token: Any = TokenObtainPairSerializer.get_token(user)
 
         return Response(
-            {"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED
+            {
+                "user": serializer.data,
+                "message": "Login successfully",
+                "token": {"refresh": str(token), "access": str(token.access_token)},
+            },
+            status=status.HTTP_200_OK,
         )
 
 
 class UserViewSet(viewsets.ModelViewSet):
-
     queryset: BaseManager[User] = User.objects.all()
     serializer_class: Type[UserSerializer] = UserSerializer
 
     def retrieve(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
-        if pk is None:
-            user: AbstractBaseUser | AnonymousUser = request.user
-        else:
-            user: User = User.objects.get(pk=pk)
+        user: User = User.objects.get(pk=pk)
 
-        if user:
-            serializer: UserSerializer = UserSerializer(user)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+        if user == None:
+            return Response(
+                {"error": "User not found"}, status=status.HTTP_404_NOT_FOUND
+            )
 
-        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer: UserSerializer = UserSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def update(self, request: HttpRequest) -> Response:
         if request.data["image"]:
@@ -86,13 +82,13 @@ class UserViewSet(viewsets.ModelViewSet):
 
         serializer: UserSerializer = UserSerializer(request.user, data=request.data)
 
-        if serializer.is_valid():
-            serializer.save()
-            return Response(
-                {"message": "User updated successfully"}, status=status.HTTP_200_OK
-            )
+        if serializer.is_valid() == False:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return Response(
+            {"message": "User updated successfully"}, status=status.HTTP_200_OK
+        )
 
     def destroy(self, request: HttpRequest) -> Response:
         check: AbstractBaseUser | None = authenticate(
@@ -127,36 +123,35 @@ class UserViewSet(viewsets.ModelViewSet):
     def update_password(self, request: HttpRequest) -> Response:
         user: AbstractBaseUser | AnonymousUser = request.user
 
-        if user.check_password(request.data.get("old_password")):
-            user.password = make_password(request.data.get("new_password"))
-            user.save()
+        if user.check_password(request.data.get("old_password")) == False:
             return Response(
-                {"message": "Password updated successfully"}, status=status.HTTP_200_OK
+                {"error": "Wrong password"}, status=status.HTTP_401_UNAUTHORIZED
             )
 
+        user.password = make_password(request.data.get("new_password"))
+        user.save()
         return Response(
-            {"error": "Wrong password"}, status=status.HTTP_401_UNAUTHORIZED
+            {"message": "Password updated successfully"}, status=status.HTTP_200_OK
         )
 
 
 class BabbleViewSet(viewsets.ModelViewSet):
-
     queryset: BaseManager[Babble] = Babble.objects.all()
     serializer_class: Type[BabbleSerializer] = BabbleSerializer
 
     def create(self, request: HttpRequest) -> Response:
         request.data["audio"].name = str(request.user.id) + "-" + "%y%m%d"
         serializer: BabbleSerializer = BabbleSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            serializer.data["tags"] = stt.get_keywords(serializer.data.get("audio"))
-            serializer.save()
-            return Response(
-                {"message": "Babble created successfully"},
-                status=status.HTTP_201_CREATED,
-            )
+        if serializer.is_valid() == False:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        serializer.data["tags"] = stt.get_keywords(serializer.data.get("audio"))
+        serializer.save()
+        return Response(
+            {"message": "Babble created successfully"},
+            status=status.HTTP_201_CREATED,
+        )
 
     def retrieve(self, pk: Optional[int] = None) -> FileResponse:
         babble: Babble = Babble.objects.get(Babble, pk=pk)
@@ -164,7 +159,9 @@ class BabbleViewSet(viewsets.ModelViewSet):
             return Response(
                 {"error": "Babble not found"}, status=status.HTTP_404_NOT_FOUND
             )
+
         babble.audio.open()
+
         return FileResponse(
             babble.audio,
             as_attachment=True,
@@ -181,15 +178,15 @@ class BabbleViewSet(viewsets.ModelViewSet):
         request.data["audio"].name = str(request.user.id) + "-" + "%y%m%d"
         serializer: BabbleSerializer = BabbleSerializer(babble, data=request.data)
 
-        if serializer.is_valid():
-            serializer.save()
-            serializer.data["tags"] = stt.get_keywords(serializer.data.get("audio"))
-            serializer.save()
-            return Response(
-                {"message": "Babble updated successfully"}, status=status.HTTP_200_OK
-            )
+        if serializer.is_valid() == False:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        serializer.data["tags"] = stt.get_keywords(serializer.data.get("audio"))
+        serializer.save()
+        return Response(
+            {"message": "Babble updated successfully"}, status=status.HTTP_200_OK
+        )
 
     def destroy(self, pk: Optional[int] = None) -> Response:
         babble: Babble = Babble.objects.get(Babble, pk=pk)
@@ -197,49 +194,55 @@ class BabbleViewSet(viewsets.ModelViewSet):
             return Response(
                 {"error": "Babble not found"}, status=status.HTTP_404_NOT_FOUND
             )
+
         babble.delete()
+
         return Response(
             {"message": "Babble deleted successfully"}, status=status.HTTP_200_OK
         )
 
 
 class CommentViewSet(viewsets.ModelViewSet):
-
     queryset: BaseManager[Comment] = Comment.objects.all()
     serializer_class: Type[CommentSerializer] = CommentSerializer
 
     def create(self, request: HttpRequest) -> Response:
         request.data["audio"].name = str(request.user.id) + "-" + "%y%m%d"
         serializer: CommentSerializer = CommentSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            serializer.data["tags"] = stt.get_keywords(serializer.data.get("audio"))
-            serializer.save()
-            return Response(
-                {"message": "Comment created successfully"},
-                status=status.HTTP_201_CREATED,
-            )
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if serializer.is_valid() == False:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer.save()
+        serializer.data["tags"] = stt.get_keywords(serializer.data.get("audio"))
+        serializer.save()
+
+        return Response(
+            {"message": "Comment created successfully"},
+            status=status.HTTP_201_CREATED,
+        )
 
     def update(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
         comment: Comment = Comment.objects.get(Comment, pk=pk)
+
         if comment is None:
             return Response(
                 {"error": "Comment not found"}, status=status.HTTP_404_NOT_FOUND
             )
+
         request.data["audio"].name = str(request.user.id) + "-" + "%y%m%d"
         serializer: CommentSerializer = CommentSerializer(comment, data=request.data)
 
-        if serializer.is_valid():
-            serializer.save()
-            serializer.data["tags"] = stt.get_keywords(serializer.data.get("audio"))
-            serializer.save()
-            return Response(
-                {"message": "Comment updated successfully"}, status=status.HTTP_200_OK
-            )
+        if serializer.is_valid() == False:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        serializer.data["tags"] = stt.get_keywords(serializer.data.get("audio"))
+        serializer.save()
+
+        return Response(
+            {"message": "Comment updated successfully"}, status=status.HTTP_200_OK
+        )
 
     def destroy(self, pk: Optional[int] = None) -> Response:
         comment: Comment = Comment.objects.get(Comment, pk=pk)
@@ -256,15 +259,18 @@ class CommentViewSet(viewsets.ModelViewSet):
         babble: Babble = Babble.objects.get(user=request.user)
         comments: List[Comment] = self.queryset.filter(babble=babble)
         serializer: CommentSerializer = CommentSerializer(comments, many=True)
+
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def retrieve(self, pk: Optional[int] = None) -> FileResponse:
         comment: Comment = Comment.objects.get(Comment, pk=pk)
+
         if comment is None:
             return Response(
                 {"error": "Comment not found"}, status=status.HTTP_404_NOT_FOUND
             )
         comment.audio.open()
+
         return FileResponse(
             comment.audio,
             as_attachment=True,
@@ -274,36 +280,35 @@ class CommentViewSet(viewsets.ModelViewSet):
 
 
 class FollowerViewSet(viewsets.ModelViewSet):
-
     queryset: BaseManager[Follower] = Follower.objects.all()
     serializer_classz: Type[FollowerSerializer] = FollowerSerializer
 
     def create(self, request: HttpRequest) -> Response:
         serializer: FollowerSerializer = FollowerSerializer(data=request.data)
 
-        if serializer.is_valid():
-            try:
-                with transaction.atomic():
-                    serializer.save()
-                    user: User = User.objects.get(User, pk=request.data.get("user"))
-                    following: User = User.objects.get(
-                        User, pk=request.data.get("following")
-                    )
-                    user.following += 1
-                    following.followers += 1
-                    user.save()
-                    following.save()
-            except DatabaseError:
-                return Response(
-                    {"error": "Cancle follower"}, status=status.HTTP_409_CONFLICT
-                )
+        if serializer.is_valid() == False:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+        try:
+            with transaction.atomic():
+                serializer.save()
+                user: User = User.objects.get(User, pk=request.data.get("user"))
+                following: User = User.objects.get(
+                    User, pk=request.data.get("following")
+                )
+                user.following += 1
+                following.followers += 1
+                user.save()
+                following.save()
+        except DatabaseError:
             return Response(
-                {"message": "Follower created successfully"},
-                status=status.HTTP_201_CREATED,
+                {"error": "Cancle follower"}, status=status.HTTP_409_CONFLICT
             )
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"message": "Follower created successfully"},
+            status=status.HTTP_201_CREATED,
+        )
 
     def destroy(self, request, pk: Optional[int] = None) -> Response:
         following: User = User.objects.get(User, pk=pk)
@@ -351,13 +356,14 @@ class LikeViewSet(viewsets.ModelViewSet):
     def create(self, request: HttpRequest) -> Response:
         serializer: LikeSerializer = LikeSerializer(data=request.data)
 
-        if serializer.is_valid():
-            serializer.save()
-            return Response(
-                {"message": "Like created successfully"}, status=status.HTTP_201_CREATED
-            )
+        if serializer.is_valid() == False:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+
+        return Response(
+            {"message": "Like created successfully"}, status=status.HTTP_201_CREATED
+        )
 
     def destroy(self, pk: Optional[int] = None) -> Response:
         like: Like = Like.objects.get(Like, pk=pk)
@@ -365,17 +371,21 @@ class LikeViewSet(viewsets.ModelViewSet):
             return Response(
                 {"error": "Like not found"}, status=status.HTTP_404_NOT_FOUND
             )
+
         like.delete()
+
         return Response(
             {"message": "Like deleted successfully"}, status=status.HTTP_200_OK
         )
 
     def list(self, request: HttpRequest, id: Optional[int] = None) -> Response:
         user: User = User.objects.get(User, pk=id)
+
         if user is None:
             return Response(
                 {"error": "User not found"}, status=status.HTTP_404_NOT_FOUND
             )
+
         likes: List[Like] = self.queryset.filter(user=user)
         serializer: LikeSerializer = LikeSerializer(likes, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -389,10 +399,12 @@ class TagViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"], url_path="<str:tag>")
     def get_babbles_with_tag(self, tag: Optional[str] = None) -> Response:
         tags: List[Tag] = self.queryset.filter(text=tag)
+
         if tags is None:
             return Response(
                 {"error": "Tags not found"}, status=status.HTTP_404_NOT_FOUND
             )
+
         babbles: List[Babble] = Babble.objects.filter(tags=tags)
         serializer: BabbleSerializer = BabbleSerializer(babbles, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
