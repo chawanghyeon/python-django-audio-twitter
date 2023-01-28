@@ -195,7 +195,18 @@ class BabbleViewSet(viewsets.ModelViewSet):
                 {"error": "Babble not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
-        babble.delete()
+        try:
+            with transaction.atomic():
+                if babble.rebabble != None:
+                    Babble.objects.get(Babble, pk=babble.rebabble.id).update(
+                        rebabble_count=F("rebabble_count") - 1
+                    )
+                babble.delete()
+        except DatabaseError:
+            return Response(
+                {"error": "Something went wrong"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         return Response(
             {"message": "Babble deleted successfully"}, status=status.HTTP_200_OK
@@ -213,9 +224,22 @@ class CommentViewSet(viewsets.ModelViewSet):
         if serializer.is_valid() == False:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer.save()
-        serializer.data["tags"] = stt.get_keywords(serializer.data.get("audio"))
-        serializer.save()
+        try:
+            with transaction.atomic():
+                serializer.save()
+                serializer.data["tags"] = stt.get_keywords(serializer.data.get("audio"))
+                serializer.save()
+
+                babble: Babble = Babble.objects.get(
+                    Babble, pk=request.data.get("babble")
+                )
+                babble.comment_count += 1
+                babble.save()
+        except DatabaseError:
+            return Response(
+                {"error": "Something went wrong"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         return Response(
             {"message": "Comment created successfully"},
@@ -250,7 +274,17 @@ class CommentViewSet(viewsets.ModelViewSet):
             return Response(
                 {"error": "Comment not found"}, status=status.HTTP_404_NOT_FOUND
             )
-        comment.delete()
+        try:
+            with transaction.atomic():
+                babble: Babble = Babble.objects.get(Babble, pk=comment.babble.id)
+                babble.comment_count -= 1
+                babble.save()
+                comment.delete()
+        except DatabaseError:
+            return Response(
+                {"error": "Something went wrong"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
         return Response(
             {"message": "Comment deleted successfully"}, status=status.HTTP_200_OK
         )
@@ -349,7 +383,6 @@ class FollowerViewSet(viewsets.ModelViewSet):
 
 
 class LikeViewSet(viewsets.ModelViewSet):
-
     queryset: BaseManager[Like] = Like.objects.all()
     serializer_class: Type[LikeSerializer] = LikeSerializer
 
@@ -359,7 +392,17 @@ class LikeViewSet(viewsets.ModelViewSet):
         if serializer.is_valid() == False:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer.save()
+        try:
+            with transaction.atomic():
+                serializer.save()
+                babble: Babble = Babble.objects.get(
+                    Babble, pk=request.data.get("babble")
+                )
+                babble.like_count += 1
+                babble.save()
+                serializer.save()
+        except DatabaseError:
+            return Response({"error": "Cancle like"}, status=status.HTTP_409_CONFLICT)
 
         return Response(
             {"message": "Like created successfully"}, status=status.HTTP_201_CREATED
@@ -372,7 +415,14 @@ class LikeViewSet(viewsets.ModelViewSet):
                 {"error": "Like not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
-        like.delete()
+        try:
+            with transaction.atomic():
+                babble: Babble = Babble.objects.get(Babble, pk=like.babble.id)
+                babble.like_count -= 1
+                babble.save()
+                like.delete()
+        except DatabaseError:
+            return Response({"error": "Cancle unlike"}, status=status.HTTP_409_CONFLICT)
 
         return Response(
             {"message": "Like deleted successfully"}, status=status.HTTP_200_OK
