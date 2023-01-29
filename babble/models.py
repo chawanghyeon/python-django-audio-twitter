@@ -1,5 +1,14 @@
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
+
+
+class MyManager(models.Manager):
+    def get_or_none(self, **kwargs):
+        try:
+            return self.get(**kwargs)
+        except ObjectDoesNotExist:
+            return None
 
 
 class User(AbstractUser):
@@ -14,6 +23,7 @@ class User(AbstractUser):
     bio = models.CharField(max_length=140, blank=True)
     follower_count = models.IntegerField(default=0)
     following_count = models.IntegerField(default=0)
+    objects = MyManager()
 
     def __unicode__(self):
         return self.first_name
