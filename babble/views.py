@@ -27,6 +27,7 @@ class AuthViewSet(viewsets.GenericViewSet):
 
     @action(detail=False, methods=["post"], url_name="signup")
     def signup(self, request: HttpRequest) -> Response:
+        request.data["password"] = make_password(request.data.get("password"))
         serializer: UserSerializer = UserSerializer(data=request.data)
 
         if serializer.is_valid() == False:
@@ -65,8 +66,11 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset: BaseManager[User] = User.objects.all()
     serializer_class: Type[UserSerializer] = UserSerializer
 
-    def retrieve(self, pk: Optional[int] = None) -> Response:
-        user: User = User.objects.get(pk=pk)
+    def retrieve(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
+        if pk == None:
+            user: User = request.user
+        else:
+            user: User = User.objects.get(pk=pk)
 
         if user == None:
             return Response(
@@ -449,8 +453,11 @@ class LikeViewSet(viewsets.ModelViewSet):
             {"message": "Like deleted successfully"}, status=status.HTTP_200_OK
         )
 
-    def list(self, request: HttpRequest, id: Optional[int] = None) -> Response:
-        user: User = User.objects.get(User, pk=id)
+    def list(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
+        if pk is None:
+            user: User = request.user
+        else:
+            user: User = User.objects.get(User, pk=pk)
 
         if user is None:
             return Response(
