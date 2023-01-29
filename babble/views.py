@@ -70,7 +70,7 @@ class UserViewSet(viewsets.ModelViewSet):
         if pk == None:
             user: User = request.user
         else:
-            user: User = User.objects.get(pk=pk)
+            user: Optional[User] = User.objects.get_or_none(pk=pk)
 
         if user == None:
             return Response(
@@ -168,7 +168,7 @@ class BabbleViewSet(viewsets.ModelViewSet):
         )
 
     def retrieve(self, pk: Optional[int] = None) -> FileResponse:
-        babble: Babble = Babble.objects.get(Babble, pk=pk)
+        babble: Optional[Babble] = Babble.objects.get_or_none(Babble, pk=pk)
 
         if babble is None:
             return Response(
@@ -185,7 +185,7 @@ class BabbleViewSet(viewsets.ModelViewSet):
         )
 
     def update(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
-        babble: Babble = Babble.objects.get(Babble, pk=pk)
+        babble: Optional[Babble] = Babble.objects.get_or_none(Babble, pk=pk)
 
         if babble is None:
             return Response(
@@ -214,7 +214,7 @@ class BabbleViewSet(viewsets.ModelViewSet):
         )
 
     def destroy(self, pk: Optional[int] = None) -> Response:
-        babble: Babble = Babble.objects.get(Babble, pk=pk)
+        babble: Optional[Babble] = Babble.objects.get_or_none(Babble, pk=pk)
         if babble is None:
             return Response(
                 {"error": "Babble not found"}, status=status.HTTP_404_NOT_FOUND
@@ -223,9 +223,12 @@ class BabbleViewSet(viewsets.ModelViewSet):
         try:
             with transaction.atomic():
                 if babble.rebabble != None:
-                    Babble.objects.get(Babble, pk=babble.rebabble.id).update(
-                        rebabble_count=F("rebabble_count") - 1
+                    rebabble: Optional[Babble] = Babble.objects.get_or_none(
+                        Babble, pk=babble.rebabble.id
                     )
+                    if rebabble is None:
+                        raise DatabaseError
+                    rebabble.update(rebabble_count=F("rebabble_count") - 1)
                 babble.delete()
         except DatabaseError:
             return Response(
@@ -255,9 +258,13 @@ class CommentViewSet(viewsets.ModelViewSet):
                 serializer.data["tags"] = stt.get_keywords(serializer.data.get("audio"))
                 serializer.save()
 
-                babble: Babble = Babble.objects.get(
+                babble: Optional[Babble] = Babble.objects.get_or_none(
                     Babble, pk=request.data.get("babble")
                 )
+
+                if babble is None:
+                    raise DatabaseError
+
                 babble.comment_count += 1
                 babble.save()
         except DatabaseError:
@@ -272,7 +279,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         )
 
     def update(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
-        comment: Comment = Comment.objects.get(Comment, pk=pk)
+        comment: Comment = Comment.objects.get_or_none(Comment, pk=pk)
 
         if comment is None:
             return Response(
@@ -294,14 +301,18 @@ class CommentViewSet(viewsets.ModelViewSet):
         )
 
     def destroy(self, pk: Optional[int] = None) -> Response:
-        comment: Comment = Comment.objects.get(Comment, pk=pk)
+        comment: Optional[Comment] = Comment.objects.get_or_none(Comment, pk=pk)
         if comment is None:
             return Response(
                 {"error": "Comment not found"}, status=status.HTTP_404_NOT_FOUND
             )
         try:
             with transaction.atomic():
-                babble: Babble = Babble.objects.get(Babble, pk=comment.babble.id)
+                babble: Optional[Babble] = Babble.objects.get_or_none(
+                    Babble, pk=comment.babble.id
+                )
+                if babble is None:
+                    raise DatabaseError
                 babble.comment_count -= 1
                 babble.save()
                 comment.delete()
@@ -315,19 +326,24 @@ class CommentViewSet(viewsets.ModelViewSet):
         )
 
     def list(self, request: HttpRequest) -> Response:
-        babble: Babble = Babble.objects.get(user=request.user)
+        babble: Optional[Babble] = Babble.objects.get_or_none(user=request.user)
+        if babble is None:
+            return Response(
+                {"error": "Babble not found"}, status=status.HTTP_404_NOT_FOUND
+            )
         comments: List[Comment] = self.queryset.filter(babble=babble)
         serializer: CommentSerializer = CommentSerializer(comments, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def retrieve(self, pk: Optional[int] = None) -> FileResponse:
-        comment: Comment = Comment.objects.get(Comment, pk=pk)
+        comment: Optional[Comment] = Comment.objects.get_or_none(Comment, pk=pk)
 
         if comment is None:
             return Response(
                 {"error": "Comment not found"}, status=status.HTTP_404_NOT_FOUND
             )
+
         comment.audio.open()
 
         return FileResponse(
@@ -351,10 +367,14 @@ class FollowerViewSet(viewsets.ModelViewSet):
         try:
             with transaction.atomic():
                 serializer.save()
-                user: User = User.objects.get(User, pk=request.data.get("user"))
-                following: User = User.objects.get(
+                user: Optional[User] = User.objects.get_or_none(
+                    User, pk=request.data.get("user")
+                )
+                following: Optional[User] = User.objects.get_or_none(
                     User, pk=request.data.get("following")
                 )
+                if user is None or following is None:
+                    raise DatabaseError
                 user.following += 1
                 following.followers += 1
                 user.save()
@@ -370,8 +390,12 @@ class FollowerViewSet(viewsets.ModelViewSet):
         )
 
     def destroy(self, request, pk: Optional[int] = None) -> Response:
-        following: User = User.objects.get(User, pk=pk)
-        follower: Follower = Follower.objects.get(
+        following: Optional[User] = User.objects.get_or_none(User, pk=pk)
+        if following is None:
+            return Response(
+                {"error": "Following not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        follower: Optional[Follower] = Follower.objects.get_or_none(
             Follower, User=request.user, following=following
         )
         if follower is None:
@@ -420,9 +444,11 @@ class LikeViewSet(viewsets.ModelViewSet):
         try:
             with transaction.atomic():
                 serializer.save()
-                babble: Babble = Babble.objects.get(
+                babble: Optional[Babble] = Babble.objects.get_or_none(
                     Babble, pk=request.data.get("babble")
                 )
+                if babble is None:
+                    raise DatabaseError
                 babble.like_count += 1
                 babble.save()
                 serializer.save()
@@ -434,7 +460,7 @@ class LikeViewSet(viewsets.ModelViewSet):
         )
 
     def destroy(self, pk: Optional[int] = None) -> Response:
-        like: Like = Like.objects.get(Like, pk=pk)
+        like: Optional[Like] = Like.objects.get_or_none(Like, pk=pk)
         if like is None:
             return Response(
                 {"error": "Like not found"}, status=status.HTTP_404_NOT_FOUND
@@ -442,7 +468,11 @@ class LikeViewSet(viewsets.ModelViewSet):
 
         try:
             with transaction.atomic():
-                babble: Babble = Babble.objects.get(Babble, pk=like.babble.id)
+                babble: Optional[Babble] = Babble.objects.get_or_none(
+                    Babble, pk=like.babble.id
+                )
+                if babble is None:
+                    raise DatabaseError
                 babble.like_count -= 1
                 babble.save()
                 like.delete()
@@ -457,7 +487,7 @@ class LikeViewSet(viewsets.ModelViewSet):
         if pk is None:
             user: User = request.user
         else:
-            user: User = User.objects.get(User, pk=pk)
+            user: Optional[User] = User.objects.get_or_none(User, pk=pk)
 
         if user is None:
             return Response(

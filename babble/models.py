@@ -1,9 +1,19 @@
-from django.contrib.auth.models import AbstractUser
+from typing import Any
+
+from django.contrib.auth.models import AbstractUser, UserManager
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 
 
-class MyManager(models.Manager):
+class UserManager(UserManager):
+    def get_or_none(self, **kwargs):
+        try:
+            return self.get(**kwargs)
+        except ObjectDoesNotExist:
+            return None
+
+
+class DefaultManager(models.Manager):
     def get_or_none(self, **kwargs):
         try:
             return self.get(**kwargs)
@@ -23,7 +33,7 @@ class User(AbstractUser):
     bio = models.CharField(max_length=140, blank=True)
     follower_count = models.IntegerField(default=0)
     following_count = models.IntegerField(default=0)
-    objects = MyManager()
+    objects = UserManager()
 
     def __unicode__(self):
         return self.first_name
@@ -36,6 +46,7 @@ class Tag(models.Model):
     id = models.IntegerField(primary_key=True, unique=True, blank=True)
     text = models.CharField(max_length=20)
     crated = models.DateTimeField(auto_now_add=True)
+    objects = DefaultManager()
 
     def __unicode__(self):
         return self.text
@@ -53,6 +64,7 @@ class Babble(models.Model):
     like_count = models.IntegerField(default=0)
     comment_count = models.IntegerField(default=0)
     rebabble_count = models.IntegerField(default=0)
+    objects = DefaultManager()
 
     def __unicode__(self):
         return self.user.first_name
@@ -66,6 +78,7 @@ class Comment(models.Model):
     duration = models.IntegerField(blank=True)
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True, blank=True)
+    objects = DefaultManager()
 
     def __unicode__(self):
         return self.user.first_name
@@ -78,6 +91,7 @@ class Follower(models.Model):
         User, related_name="following", on_delete=models.CASCADE
     )
     created = models.DateTimeField(auto_now_add=True)
+    objects = DefaultManager()
 
     def __unicode__(self):
         return self.user.first_name + " follows " + self.following.first_name
@@ -88,6 +102,7 @@ class Like(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     babble = models.ForeignKey(Babble, on_delete=models.CASCADE)
     created = models.DateTimeField(auto_now_add=True)
+    objects = DefaultManager()
 
     def __unicode__(self):
         return self.user.first_name + " likes " + str(self.babble.id)
