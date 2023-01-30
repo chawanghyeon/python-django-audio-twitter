@@ -1,3 +1,4 @@
+from email.mime import image
 from typing import Any, List, Optional, Type
 
 from django.contrib.auth import authenticate
@@ -8,6 +9,7 @@ from django.db import DatabaseError, transaction
 from django.db.models import F, Q
 from django.db.models.manager import BaseManager
 from django.http import FileResponse, HttpRequest
+from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -80,11 +82,30 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer: UserSerializer = UserSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def update(self, request: HttpRequest) -> Response:
+    def partial_update(
+        self, request: HttpRequest, pk: Optional[int] = None
+    ) -> Response:
         if request.data["image"]:
-            request.data["image"].name = str(request.user.id) + "-" + "%y%m%d"
+            now = timezone.now()
+            request.data["image"].name = (
+                str(request.user.id) + "-" + str(now.strftime("%H%M%S")) + ".jpg"
+            )
 
-        serializer: UserSerializer = UserSerializer(request.user, data=request.data)
+        user: Optional[User] = User.objects.get_or_none(pk=pk)
+        if user == None:
+            return Response(
+                {"error": "User not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        if user != request.user:
+            return Response(
+                {"error": "You are not allowed to do this"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer: UserSerializer = UserSerializer(
+            request.user, data=request.data, partial=True
+        )
 
         if serializer.is_valid() == False:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
