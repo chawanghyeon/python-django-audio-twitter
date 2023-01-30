@@ -1,4 +1,3 @@
-from email.mime import image
 from typing import Any, List, Optional, Type
 
 from django.contrib.auth import authenticate
