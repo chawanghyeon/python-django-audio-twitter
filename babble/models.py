@@ -1,26 +1,8 @@
-from typing import Any
-
-from django.contrib.auth.models import AbstractUser, UserManager
-from django.core.exceptions import ObjectDoesNotExist
+from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+from .managers import *
 from .utils import image_file_path
-
-
-class UserManager(UserManager):
-    def get_or_none(self, **kwargs):
-        try:
-            return self.get(**kwargs)
-        except ObjectDoesNotExist:
-            return None
-
-
-class DefaultManager(models.Manager):
-    def get_or_none(self, **kwargs):
-        try:
-            return self.get(**kwargs)
-        except ObjectDoesNotExist:
-            return None
 
 
 class User(AbstractUser):
@@ -35,7 +17,7 @@ class User(AbstractUser):
     bio = models.CharField(max_length=140, blank=True)
     follower_count = models.IntegerField(default=0)
     following_count = models.IntegerField(default=0)
-    objects = UserManager()
+    objects = PrivateUserManager()
 
     def __unicode__(self):
         return self.first_name
