@@ -84,11 +84,6 @@ class UserViewSet(viewsets.ModelViewSet):
     def partial_update(
         self, request: HttpRequest, pk: Optional[int] = None
     ) -> Response:
-        if request.data["image"]:
-            now = timezone.now()
-            request.data["image"].name = (
-                str(request.user.id) + "-" + str(now.strftime("%H%M%S")) + ".jpg"
-            )
 
         user: Optional[User] = User.objects.get_or_none(pk=pk)
         if user == None:

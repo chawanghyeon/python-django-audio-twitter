@@ -4,6 +4,8 @@ from django.contrib.auth.models import AbstractUser, UserManager
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 
+from .utils import image_file_path
+
 
 class UserManager(UserManager):
     def get_or_none(self, **kwargs):
@@ -24,8 +26,8 @@ class DefaultManager(models.Manager):
 class User(AbstractUser):
     id = models.IntegerField(primary_key=True, unique=True, blank=True)
     birthday = models.DateTimeField(blank=True, null=True)
-    image = models.ImageField(upload_to="image/%Y/%m/%d", blank=True, null=True)
-    background = models.ImageField(upload_to="image/%Y/%m/%d", blank=True, null=True)
+    image = models.ImageField(upload_to=image_file_path, blank=True, null=True)
+    background = models.ImageField(upload_to=image_file_path, blank=True, null=True)
     nickname = models.CharField(max_length=20, blank=True)
     location = models.CharField(max_length=20, blank=True)
     number = models.CharField(max_length=20, blank=True)
