@@ -2,7 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 from .managers import *
-from .utils import image_file_path
+from .utils import *
 
 
 class User(AbstractUser):
@@ -40,7 +40,7 @@ class Babble(models.Model):
     id = models.IntegerField(primary_key=True, unique=True, blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     rebabble = models.ForeignKey("self", on_delete=models.CASCADE, blank=True)
-    audio = models.FileField(upload_to="audio/%Y/%m/%d", blank=True)
+    audio = models.FileField(upload_to=audio_file_path, blank=True)
     duration = models.IntegerField(blank=True)
     created = models.DateTimeField(auto_now_add=True, blank=True)
     modified = models.DateTimeField(auto_now=True, blank=True)
@@ -58,7 +58,7 @@ class Comment(models.Model):
     id = models.IntegerField(primary_key=True, unique=True, blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     babble = models.ForeignKey(Babble, on_delete=models.CASCADE)
-    audio = models.FileField(upload_to="audio/%Y/%m/%d")
+    audio = models.FileField(upload_to=audio_file_path)
     duration = models.IntegerField(blank=True)
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True, blank=True)
