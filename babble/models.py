@@ -45,9 +45,9 @@ class Babble(models.Model):
     created = models.DateTimeField(auto_now_add=True, blank=True)
     modified = models.DateTimeField(auto_now=True, blank=True)
     tags = models.ManyToManyField(Tag, blank=True)
-    like_count = models.IntegerField(default=0)
-    comment_count = models.IntegerField(default=0)
-    rebabble_count = models.IntegerField(default=0)
+    like_count = models.IntegerField(default=0, blank=True)
+    comment_count = models.IntegerField(default=0, blank=True)
+    rebabble_count = models.IntegerField(default=0, blank=True)
     objects = DefaultManager()
 
     def __unicode__(self):
