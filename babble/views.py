@@ -159,7 +159,7 @@ class BabbleViewSet(viewsets.ModelViewSet):
     serializer_class: Type[BabbleSerializer] = BabbleSerializer
 
     def create(self, request: HttpRequest) -> Response:
-        request.data["audio"].name = str(request.user.id) + "-" + "%y%m%d"
+        request.data["user"] = request.user.id
         serializer: BabbleSerializer = BabbleSerializer(data=request.data)
 
         if serializer.is_valid() == False:
