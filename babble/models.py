@@ -6,7 +6,7 @@ from .utils import *
 
 
 class User(AbstractUser):
-    id = models.IntegerField(primary_key=True, unique=True, blank=True)
+    id = models.BigAutoField(primary_key=True, unique=True)
     birthday = models.DateTimeField(blank=True, null=True)
     image = models.ImageField(upload_to=image_file_path, blank=True, null=True)
     background = models.ImageField(upload_to=image_file_path, blank=True, null=True)
@@ -27,7 +27,7 @@ class User(AbstractUser):
 
 
 class Tag(models.Model):
-    id = models.IntegerField(primary_key=True, unique=True, blank=True)
+    id = models.BigAutoField(primary_key=True, unique=True)
     text = models.CharField(max_length=20)
     crated = models.DateTimeField(auto_now_add=True)
     objects = DefaultManager()
@@ -37,7 +37,7 @@ class Tag(models.Model):
 
 
 class Babble(models.Model):
-    id = models.IntegerField(primary_key=True, unique=True, blank=True)
+    id = models.BigAutoField(primary_key=True, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     rebabble = models.ForeignKey("self", on_delete=models.CASCADE, blank=True)
     audio = models.FileField(upload_to=audio_file_path, blank=True)
@@ -55,7 +55,7 @@ class Babble(models.Model):
 
 
 class Comment(models.Model):
-    id = models.IntegerField(primary_key=True, unique=True, blank=True)
+    id = models.BigAutoField(primary_key=True, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     babble = models.ForeignKey(Babble, on_delete=models.CASCADE)
     audio = models.FileField(upload_to=audio_file_path)
@@ -69,7 +69,7 @@ class Comment(models.Model):
 
 
 class Follower(models.Model):
-    id = models.IntegerField(primary_key=True, unique=True, blank=True)
+    id = models.BigAutoField(primary_key=True, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     following = models.ForeignKey(
         User, related_name="following", on_delete=models.CASCADE
@@ -82,7 +82,7 @@ class Follower(models.Model):
 
 
 class Like(models.Model):
-    id = models.IntegerField(primary_key=True, unique=True, blank=True)
+    id = models.BigAutoField(primary_key=True, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     babble = models.ForeignKey(Babble, on_delete=models.CASCADE)
     created = models.DateTimeField(auto_now_add=True)
