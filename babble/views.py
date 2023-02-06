@@ -159,7 +159,6 @@ class BabbleViewSet(viewsets.ModelViewSet):
     serializer_class: Type[BabbleSerializer] = BabbleSerializer
 
     def create(self, request: HttpRequest) -> Response:
-        request.data["user"] = request.user.id
         serializer: BabbleSerializer = BabbleSerializer(data=request.data)
 
         if serializer.is_valid() == False:
@@ -167,9 +166,9 @@ class BabbleViewSet(viewsets.ModelViewSet):
 
         try:
             with transaction.atomic():
-                serializer.save()
-                babble: Babble = Babble.objects.get(id=serializer.data.get("id"))
-                babble.tags = stt.get_keywords(serializer.data.get("audio"))
+                babble: Babble = serializer.save(user=request.user)
+                # babble: Babble = Babble.objects.get(pk=serializer.data.get("id"))
+                babble.tags = ["test", "test2"]
                 babble.save()
         except DatabaseError:
             return Response(

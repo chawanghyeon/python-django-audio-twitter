@@ -39,15 +39,17 @@ class Tag(models.Model):
 class Babble(models.Model):
     id = models.BigAutoField(primary_key=True, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    rebabble = models.ForeignKey("self", on_delete=models.CASCADE, blank=True)
-    audio = models.FileField(upload_to=audio_file_path, blank=True)
-    duration = models.IntegerField(blank=True)
-    created = models.DateTimeField(auto_now_add=True, blank=True)
-    modified = models.DateTimeField(auto_now=True, blank=True)
-    tags = models.ManyToManyField(Tag, blank=True)
-    like_count = models.IntegerField(default=0, blank=True)
-    comment_count = models.IntegerField(default=0, blank=True)
-    rebabble_count = models.IntegerField(default=0, blank=True)
+    rebabble = models.ForeignKey(
+        "self", on_delete=models.CASCADE, blank=True, null=True
+    )
+    audio = models.FileField(upload_to=audio_file_path, blank=True, null=True)
+    duration = models.IntegerField(blank=True, null=True)
+    created = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+    modified = models.DateTimeField(auto_now=True, blank=True, null=True)
+    tags = models.ManyToManyField(Tag, blank=True, null=True)
+    like_count = models.IntegerField(default=0, blank=True, null=True)
+    comment_count = models.IntegerField(default=0, blank=True, null=True)
+    rebabble_count = models.IntegerField(default=0, blank=True, null=True)
     objects = DefaultManager()
 
     def __unicode__(self):

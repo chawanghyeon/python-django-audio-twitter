@@ -39,8 +39,6 @@ class TagSerializer(ModelSerializer):
 
 
 class BabbleSerializer(ModelSerializer):
-    user: StringRelatedField = StringRelatedField(many=False)
-
     class Meta:
         fields: str = "__all__"
         model: Babble = Babble
