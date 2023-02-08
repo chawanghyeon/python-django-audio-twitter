@@ -167,10 +167,12 @@ class BabbleViewSet(viewsets.ModelViewSet):
         try:
             with transaction.atomic():
                 babble: Babble = serializer.save(user=request.user)
-                keywords = stt.get_keywords(babble.audio)
+                keywords: List[str] = stt.get_keywords(babble.audio)
+
                 for keyword in keywords:
-                    Tag.objects.save(keyword, babble)
-                babble.tags = ["test", "test2"]
+                    tag: Tag = Tag.objects.get_or_create(name=keyword)
+                    babble.tags.add(tag)
+
                 babble.save()
         except DatabaseError:
             return Response(

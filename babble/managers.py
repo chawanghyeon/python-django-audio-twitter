@@ -19,3 +19,11 @@ class DefaultManager(models.Manager):
             return self.get(**kwargs)
         except ObjectDoesNotExist:
             return None
+
+
+class TagManager(DefaultManager):
+    def get_or_create(self, keyword: str) -> Any:
+        try:
+            return self.get(text=keyword)
+        except ObjectDoesNotExist:
+            return self.create(text=keyword)

@@ -29,7 +29,7 @@ class User(AbstractUser):
 class Tag(models.Model):
     text = models.CharField(max_length=20, unique=True, primary_key=True)
     crated = models.DateTimeField(auto_now_add=True)
-    objects = DefaultManager()
+    objects = TagManager()
 
     def __unicode__(self):
         return self.text
