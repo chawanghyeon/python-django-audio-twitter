@@ -22,8 +22,8 @@ class DefaultManager(models.Manager):
 
 
 class TagManager(DefaultManager):
-    def get_or_create(self, keyword: str) -> Any:
+    def get_or_create(self, text: str) -> Any:
         try:
-            return self.get(text=keyword)
+            return self.get(text=text)
         except ObjectDoesNotExist:
-            return self.create(text=keyword)
+            return self.create(text=text)

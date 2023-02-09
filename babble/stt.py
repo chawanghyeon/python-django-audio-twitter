@@ -22,26 +22,37 @@ class STT:
             "sentiment-analysis", tokenizer=self.tokenizer, model=self.electra_model
         )
         self.okt: Okt = Okt()
-        self.queue: deque = deque([])
-        self.running_count: int = 0
+        self.gpu_count: int = 0
 
     def transcribe(self, audio_path: str) -> str:
-        stt: Any = self.whisper_model.transcribe(audio_path, fp16=False)
-        return self.analyzer(stt["text"])
+        result: Any = self.whisper_model.transcribe(audio_path, fp16=False)
+        return result["text"]
 
     def analyze_sentiment(self, text: str) -> str:
-        return self.analyzer(text)[0]["label"]
+        if self.analyzer(text)[0]["label"] == "positive":
+            return "긍정"
+        else:
+            return "부정"
+
+    def check_can_run(self) -> None:
+        while True:
+            if self.gpu_count >= 8:
+                continue
+            return
+
+    def get_nouns(self, text) -> List[str]:
+        nouns: list[str] = [x for x in self.okt.nouns(text) if len(x) > 1]
+        nouns = Counter(nouns).most_common(6)
+        return [x[0] for x in nouns]
 
     def get_keywords(self, audio_path: str) -> List[str]:
-        while True:
-            if self.running_count >= 8:
-                continue
-            break
-        self.running_count += 1
+        self.check_can_run()
+
+        self.gpu_count += 1
         text: str = self.transcribe(audio_path)
         keywords: List[str] = [self.analyze_sentiment(text)]
-        self.running_count -= 1
-        nouns: list[str] = self.okt.nouns(text)
-        nouns = [x for x in nouns if len(x) > 1]
-        keywords += Counter(self.okt.nouns(nouns)).most_common(6)
+        self.gpu_count -= 1
+
+        keywords += self.get_nouns(text)
+
         return keywords
