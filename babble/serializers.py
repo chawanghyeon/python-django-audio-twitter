@@ -3,8 +3,22 @@ from rest_framework.serializers import CharField, ModelSerializer, StringRelated
 from .models import *
 
 
+class UserInSerializer(ModelSerializer):
+    class Meta:
+        fields: str = (
+            "id",
+            "nickname",
+            "first_name",
+            "last_name",
+            "image",
+            "background",
+        )
+        model: User = User
+        depth: int = 1
+
+
 class CommentSerializer(ModelSerializer):
-    user: StringRelatedField = StringRelatedField(many=False)
+    user: UserInSerializer = UserInSerializer(many=False)
 
     class Meta:
         model: Comment = Comment
@@ -47,22 +61,8 @@ class UserSerializer(ModelSerializer):
         depth: int = 1
 
 
-class UserInBabbleSerializer(ModelSerializer):
-    class Meta:
-        fields: str = (
-            "id",
-            "first_name",
-            "last_name",
-            "image",
-            "nickname",
-            "background",
-        )
-        model: User = User
-        depth: int = 1
-
-
 class BabbleSerializer(ModelSerializer):
-    user: UserInBabbleSerializer = UserInBabbleSerializer(many=False, read_only=True)
+    user: UserInSerializer = UserInSerializer(many=False, read_only=True)
     tags: StringRelatedField = StringRelatedField(many=True)
 
     class Meta:

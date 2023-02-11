@@ -338,33 +338,16 @@ class CommentViewSet(viewsets.ModelViewSet):
             {"message": "Comment deleted successfully"}, status=status.HTTP_200_OK
         )
 
-    def list(self, request: HttpRequest) -> Response:
-        babble: Optional[Babble] = Babble.objects.get_or_none(user=request.user)
+    def retrieve(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
+        babble: Optional[Babble] = Babble.objects.get_or_none(pk=pk)
         if babble is None:
             return Response(
                 {"error": "Babble not found"}, status=status.HTTP_404_NOT_FOUND
             )
-        comments: List[Comment] = self.queryset.filter(babble=babble)
+        comments: BaseManager[Comment] = self.queryset.filter(babble=babble)
         serializer: CommentSerializer = CommentSerializer(comments, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def retrieve(self, pk: Optional[int] = None) -> FileResponse:
-        comment: Optional[Comment] = Comment.objects.get_or_none(pk=pk)
-
-        if comment is None:
-            return Response(
-                {"error": "Comment not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-
-        comment.audio.open()
-
-        return FileResponse(
-            comment.audio,
-            as_attachment=True,
-            filename=comment.audio.name,
-            status=status.HTTP_200_OK,
-        )
 
 
 class FollowerViewSet(viewsets.ModelViewSet):
