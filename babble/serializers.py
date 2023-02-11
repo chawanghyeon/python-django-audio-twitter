@@ -54,6 +54,7 @@ class UserInBabbleSerializer(ModelSerializer):
             "first_name",
             "last_name",
             "image",
+            "nickname",
             "background",
         )
         model: User = User
