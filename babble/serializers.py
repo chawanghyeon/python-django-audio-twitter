@@ -38,20 +38,33 @@ class TagSerializer(ModelSerializer):
         depth: int = 1
 
 
-class BabbleSerializer(ModelSerializer):
-    class Meta:
-        fields: str = "__all__"
-        model: Babble = Babble
-        depth: int = 1
-
-
 class UserSerializer(ModelSerializer):
-    babbles: BabbleSerializer = BabbleSerializer(
-        many=True, read_only=True, required=False
-    )
     password: CharField = CharField(write_only=True)
 
     class Meta:
         fields: str = "__all__"
         model: User = User
+        depth: int = 1
+
+
+class UserInBabbleSerializer(ModelSerializer):
+    class Meta:
+        fields: str = (
+            "id",
+            "first_name",
+            "last_name",
+            "image",
+            "background",
+        )
+        model: User = User
+        depth: int = 1
+
+
+class BabbleSerializer(ModelSerializer):
+    user: UserInBabbleSerializer = UserInBabbleSerializer(many=False, read_only=True)
+    tags: StringRelatedField = StringRelatedField(many=True)
+
+    class Meta:
+        fields: str = "__all__"
+        model: Babble = Babble
         depth: int = 1

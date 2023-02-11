@@ -34,6 +34,9 @@ class Tag(models.Model):
     def __unicode__(self):
         return self.text
 
+    def __str__(self):
+        return self.text
+
 
 class Babble(models.Model):
     id = models.BigAutoField(primary_key=True, unique=True)
