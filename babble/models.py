@@ -92,3 +92,13 @@ class Like(models.Model):
 
     def __unicode__(self):
         return self.user.first_name + " likes " + str(self.babble.id)
+
+
+class FollowerBabble(models.Model):
+    id = models.BigAutoField(primary_key=True, unique=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    babble = models.OneToOneField(Babble, on_delete=models.CASCADE)
+    created = models.DateTimeField(auto_now_add=True)
+    is_like = models.BooleanField(default=False)
+    is_rebabble = models.BooleanField(default=False)
+    objects = DefaultManager()
