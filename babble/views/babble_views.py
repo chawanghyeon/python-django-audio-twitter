@@ -1,5 +1,6 @@
 from typing import List, Optional, Type
 
+from django.core.cache import cache
 from django.db import DatabaseError, transaction
 from django.db.models import F
 from django.db.models.manager import BaseManager
@@ -34,6 +35,19 @@ class BabbleViewSet(viewsets.ModelViewSet):
                     babble.tags.add(tag)
 
                 babble.save()
+
+                followers: BaseManager[User] = request.user.following.all()
+                serializer: CacheBabbleSerializer = CacheBabbleSerializer(babble)
+
+                for follower in followers:
+                    value: Any = cache.get(follower.id)
+                    if value is None:
+                        value = {}
+                    value[serializer.data.get("id")] = serializer.data
+                    if len(value) > 20:
+                        value.popitem(last=False)
+                    cache.set(follower.id, value, 60 * 60 * 24 * 7)
+
         except DatabaseError:
             return Response(
                 {"error": "Something went wrong"},
@@ -46,6 +60,10 @@ class BabbleViewSet(viewsets.ModelViewSet):
         )
 
     def retrieve(self, request: HttpRequest, pk: Optional[int] = None) -> FileResponse:
+        value: Any = cache.get(request.user.id)
+        if value.get(pk) is not None:
+            return Response(value.get(pk), status=status.HTTP_200_OK)
+
         babble: Optional[Babble] = Babble.objects.get_or_none(pk=pk)
 
         if babble is None:
@@ -65,7 +83,6 @@ class BabbleViewSet(viewsets.ModelViewSet):
                 {"error": "Babble not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
-        request.data["audio"].name = str(request.user.id) + "-" + "%y%m%d"
         serializer: BabbleSerializer = BabbleSerializer(babble, data=request.data)
 
         if serializer.is_valid() == False:
@@ -73,9 +90,33 @@ class BabbleViewSet(viewsets.ModelViewSet):
 
         try:
             with transaction.atomic():
-                serializer.save()
-                serializer.data["tags"] = stt.get_keywords(serializer.data.get("audio"))
-                serializer.save()
+                babble: Babble = serializer.save()
+                keywords: List[str] = stt.get_keywords(babble.audio.path)
+
+                babble.tags.clear()
+
+                for keyword in keywords:
+                    tag: Tag = Tag.objects.get_or_create(text=keyword)
+                    babble.tags.add(tag)
+
+                babble.save()
+
+                followers: BaseManager[User] = request.user.following.all()
+                serializer: CacheBabbleSerializer = CacheBabbleSerializer(babble)
+
+                for follower in followers:
+                    value: Any = cache.get(follower.id)
+
+                    if value is None:
+                        value = {}
+
+                    id: int = serializer.data.get("id")
+
+                    if value.get(id) is not None:
+                        del value[id]
+
+                    value[id] = serializer.data
+                    cache.set(follower.id, value, 60 * 60 * 24 * 7)
         except DatabaseError:
             return Response(
                 {"error": "Something went wrong"},
@@ -86,8 +127,9 @@ class BabbleViewSet(viewsets.ModelViewSet):
             {"message": "Babble updated successfully"}, status=status.HTTP_200_OK
         )
 
-    def destroy(self, pk: Optional[int] = None) -> Response:
+    def destroy(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
         babble: Optional[Babble] = Babble.objects.get_or_none(pk=pk)
+
         if babble is None:
             return Response(
                 {"error": "Babble not found"}, status=status.HTTP_404_NOT_FOUND
@@ -109,6 +151,34 @@ class BabbleViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+        value: Any = cache.get(request.user.id)
+
+        if value.get(pk) is not None:
+            del value[pk]
+            cache.set(request.user.id, value, 60 * 60 * 24 * 7)
+
         return Response(
             {"message": "Babble deleted successfully"}, status=status.HTTP_200_OK
         )
+
+    def list(self, request: HttpRequest) -> Response:
+        value: Any = cache.get(request.user.id)
+
+        if value is not None:
+            return Response(list(value), status=status.HTTP_200_OK)
+
+        followings: BaseManager[User] = request.user.following.all()
+        followings_babble: BaseManager[Babble] = Babble.objects.filter(
+            user__in=followings
+        ).order_by("-created_at")[-20:]
+
+        serializer: CacheBabbleSerializer = CacheBabbleSerializer(
+            followings_babble, many=True
+        )
+
+        for babble in serializer.data:
+            value[babble.get("id")] = babble
+
+        cache.set(request.user.id, value, 60 * 60 * 24 * 7)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
