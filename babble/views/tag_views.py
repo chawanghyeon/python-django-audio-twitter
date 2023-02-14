@@ -1,23 +1,13 @@
-from typing import Any, List, Optional, Type
+from typing import List, Optional, Type
 
-from django.contrib.auth import authenticate
-from django.contrib.auth.base_user import AbstractBaseUser
-from django.contrib.auth.hashers import make_password
-from django.contrib.auth.models import AnonymousUser
-from django.db import DatabaseError, transaction
-from django.db.models import F, Q
 from django.db.models.manager import BaseManager
-from django.http import FileResponse, HttpRequest
+from django.http import HttpRequest
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from ..models import *
 from ..serializers import *
-from ..stt import STT
-
-stt: STT = STT()
 
 
 class TagViewSet(viewsets.ModelViewSet):
@@ -26,7 +16,9 @@ class TagViewSet(viewsets.ModelViewSet):
     serializer_class: Type[TagSerializer] = TagSerializer
 
     @action(detail=False, methods=["get"], url_path="<str:tag>")
-    def get_babbles_with_tag(self, tag: Optional[str] = None) -> Response:
+    def get_babbles_with_tag(
+        self, request: HttpRequest, tag: Optional[str] = None
+    ) -> Response:
         tags: List[Tag] = self.queryset.filter(text=tag)
 
         if tags is None:
