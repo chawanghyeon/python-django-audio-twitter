@@ -25,16 +25,24 @@ from rest_framework_simplejwt.views import (
     TokenVerifyView,
 )
 
-from babble import views
+from babble.views import (
+    auth_views,
+    babble_views,
+    comment_views,
+    follower_views,
+    like_views,
+    tag_views,
+    user_views,
+)
 
 router = DefaultRouter()
-router.register(r"user", views.UserViewSet, basename="user")
-router.register(r"babble", views.BabbleViewSet, basename="babble")
-router.register(r"comment", views.CommentViewSet, basename="comment")
-router.register(r"follower", views.FollowerViewSet, basename="follower")
-router.register(r"like", views.LikeViewSet, basename="like")
-router.register(r"auth", views.AuthViewSet, basename="auth")
-router.register(r"tag", views.TagViewSet, basename="tag")
+router.register(r"user", user_views.UserViewSet, basename="user")
+router.register(r"babble", babble_views.BabbleViewSet, basename="babble")
+router.register(r"comment", comment_views.CommentViewSet, basename="comment")
+router.register(r"follower", follower_views.FollowerViewSet, basename="follower")
+router.register(r"like", like_views.LikeViewSet, basename="like")
+router.register(r"auth", auth_views.AuthViewSet, basename="auth")
+router.register(r"tag", tag_views.TagViewSet, basename="tag")
 
 urlpatterns = [
     path("admin/", admin.site.urls),
