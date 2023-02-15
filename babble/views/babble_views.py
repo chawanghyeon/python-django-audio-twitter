@@ -1,4 +1,4 @@
-from typing import List, Optional, Type
+from typing import Any, Dict, List, Optional, Type
 
 from django.core.cache import cache
 from django.db import DatabaseError, transaction
@@ -175,6 +175,26 @@ class BabbleViewSet(viewsets.ModelViewSet):
         serializer: CacheBabbleSerializer = CacheBabbleSerializer(
             followings_babble, many=True
         )
+
+        likes: BaseManager[Like] = Like.objects.filter(
+            babble__in=followings_babble, user=request.user
+        )
+
+        for like in likes:
+            for babble in serializer.data:
+                if babble.get("id") == like.babble.id:
+                    babble["is_liked"] = True
+
+        value: Dict[int, Any] = {}
+
+        rebabbles: BaseManager[Babble] = Babble.objects.filter(
+            user=request.user, rebabble__in=followings_babble
+        )
+
+        for rebabble in rebabbles:
+            for babble in serializer.data:
+                if babble.get("id") == rebabble.rebabble.id:
+                    babble["is_rebabbled"] = True
 
         for babble in serializer.data:
             value[babble.get("id")] = babble
