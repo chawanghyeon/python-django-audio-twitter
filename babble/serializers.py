@@ -72,13 +72,11 @@ class BabbleSerializer(ModelSerializer):
 
 
 class CacheBabbleSerializer(ModelSerializer):
-    user: UserInSerializer = UserInSerializer(many=False, read_only=True)
-    tags: StringRelatedField = StringRelatedField(many=True)
     is_commented: bool = False
     is_liked: bool = False
     is_rebabbled: bool = False
 
     class Meta:
-        fields: str = "__all__"
+        fields: str = "id"
         model: Babble = Babble
         depth: int = 1
