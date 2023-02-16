@@ -46,11 +46,12 @@ class BabbleViewSet(viewsets.ModelViewSet):
                 serializer: CacheBabbleSerializer = CacheBabbleSerializer(babble)
 
                 for follower in followers:
-                    value: Any = user_cache.get(follower.id)
+                    value: Dict = user_cache.get(follower.id)
 
                     if value is None:
-                        value = []
-                    value.append(serializer.data)
+                        value = {}
+
+                    value[babble.id] = serializer.data
 
                     if len(value) > 20:
                         value.popitem(last=False)
@@ -65,8 +66,12 @@ class BabbleViewSet(viewsets.ModelViewSet):
                     if rebabble is None:
                         raise DatabaseError
 
+                    serializer: BabbleSerializer = BabbleSerializer(rebabble)
+
                     rebabble.update(rebabble_count=F("rebabble_count") + 1)
-                    value: Any = babble_cache.get(rebabble.id)
+                    babble_cache.set(rebabble.id, serializer.data, 60 * 60 * 24 * 7)
+
+                    value: Dict = user_cache.get(request.user.id)
 
                     if value.get(rebabble.id) is not None:
                         value[rebabble.id]["rebabbled"] = True
