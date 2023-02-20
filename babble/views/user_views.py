@@ -32,6 +32,7 @@ class UserViewSet(viewsets.ModelViewSet):
             )
 
         serializer: UserSerializer = UserSerializer(user)
+
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def partial_update(
@@ -39,6 +40,7 @@ class UserViewSet(viewsets.ModelViewSet):
     ) -> Response:
 
         user: Optional[User] = User.objects.get_or_none(pk=pk)
+
         if user == None:
             return Response(
                 {"error": "User not found"}, status=status.HTTP_404_NOT_FOUND
@@ -51,13 +53,14 @@ class UserViewSet(viewsets.ModelViewSet):
             )
 
         serializer: UserSerializer = UserSerializer(
-            request.user, data=request.data, partial=True
+            user, data=request.data, partial=True
         )
 
         if serializer.is_valid() == False:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         serializer.save()
+
         return Response(
             {"message": "User updated successfully"}, status=status.HTTP_200_OK
         )
@@ -81,6 +84,7 @@ class UserViewSet(viewsets.ModelViewSet):
                     following=F("following") - 1
                 )
                 check.delete()
+
         except DatabaseError:
             return Response(
                 {"error": "Something went wrong"},

@@ -80,3 +80,12 @@ class CacheBabbleSerializer(ModelSerializer):
         fields: str = "id"
         model: Babble = Babble
         depth: int = 1
+
+
+class LikeBabbleSerializer(ModelSerializer):
+    babbles: BabbleSerializer = BabbleSerializer(many=True)
+
+    class Meta:
+        fields: str = "babble"
+        model: Like = Like
+        depth: int = 1

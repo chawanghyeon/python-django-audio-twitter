@@ -1,6 +1,7 @@
 from typing import Optional, Type
 
 from django.db import DatabaseError, transaction
+from django.db.models import F
 from django.db.models.manager import BaseManager
 from django.http import HttpRequest
 from rest_framework import status, viewsets
@@ -23,14 +24,16 @@ class LikeViewSet(viewsets.ModelViewSet):
         try:
             with transaction.atomic():
                 serializer.save()
+
                 babble: Optional[Babble] = Babble.objects.get_or_none(
                     pk=request.data.get("babble")
                 )
+
                 if babble is None:
                     raise DatabaseError
-                babble.like_count += 1
-                babble.save()
-                serializer.save()
+
+                babble.update(like_count=F("like_count") + 1)
+
         except DatabaseError:
             return Response({"error": "Cancle like"}, status=status.HTTP_409_CONFLICT)
 
@@ -38,8 +41,9 @@ class LikeViewSet(viewsets.ModelViewSet):
             {"message": "Like created successfully"}, status=status.HTTP_201_CREATED
         )
 
-    def destroy(self, pk: Optional[int] = None) -> Response:
+    def destroy(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
         like: Optional[Like] = Like.objects.get_or_none(pk=pk)
+
         if like is None:
             return Response(
                 {"error": "Like not found"}, status=status.HTTP_404_NOT_FOUND
@@ -48,11 +52,13 @@ class LikeViewSet(viewsets.ModelViewSet):
         try:
             with transaction.atomic():
                 babble: Optional[Babble] = Babble.objects.get_or_none(pk=like.babble.id)
+
                 if babble is None:
                     raise DatabaseError
-                babble.like_count -= 1
-                babble.save()
+
+                babble.update(like_count=F("like_count") - 1)
                 like.delete()
+
         except DatabaseError:
             return Response({"error": "Cancle unlike"}, status=status.HTTP_409_CONFLICT)
 
@@ -72,5 +78,6 @@ class LikeViewSet(viewsets.ModelViewSet):
             )
 
         likes: BaseManager[Like] = self.queryset.filter(user=user)
-        serializer: LikeSerializer = LikeSerializer(likes, many=True)
+        serializer: LikeBabbleSerializer = LikeBabbleSerializer(likes, many=True)
+
         return Response(serializer.data, status=status.HTTP_200_OK)
