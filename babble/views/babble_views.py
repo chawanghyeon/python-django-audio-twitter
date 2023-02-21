@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Type
 from django.core.cache import caches
 from django.core.cache.backends.base import BaseCache
 from django.db import DatabaseError, transaction
-from django.db.models import F
+from django.db.models import F, Q
 from django.db.models.manager import BaseManager
 from django.http import HttpRequest
 from rest_framework import status, viewsets
@@ -125,7 +125,7 @@ class BabbleViewSet(viewsets.ModelViewSet):
     def retrieve(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
         value: Any = user_cache.get(request.user.id)
 
-        if value.get(pk) is not None:
+        if value is not None and value.get(pk) is not None:
             return Response(value.get(pk), status=status.HTTP_200_OK)
 
         babble: Optional[Babble] = Babble.objects.get_or_none(pk=pk)
@@ -203,18 +203,25 @@ class BabbleViewSet(viewsets.ModelViewSet):
         value: Any = user_cache.get(request.user.id)
 
         if value is not None:
-            babbles = []
+            babbles: list[Any] = []
             for id in value.values():
-                babbles.append(babble_cache.get(id))
+                if babble_cache.get(id) is not None:
+                    babbles.append(babble_cache.get(id))
+                    continue
+                babble: Optional[Babble] = Babble.objects.get_or_none(pk=id)
+                if babble is None:
+                    continue
+                serializer: BabbleSerializer = BabbleSerializer(babble)
+                babbles.append(serializer.data)
+                babble_cache.set(babble.id, serializer.data, 60 * 60 * 24 * 7)
 
             serializer: BabbleSerializer = BabbleSerializer(babbles, many=True)
 
             return Response(serializer.data, status=status.HTTP_200_OK)
 
-        followings: BaseManager[User] = request.user.following.all()
         followings_babble: BaseManager[Babble] = Babble.objects.filter(
-            user__in=followings
-        ).order_by("-created")[-20:]
+            Q(user__in=request.user.self.followings.all()) | Q(user=request.user)
+        ).order_by("-created")[:20]
 
         serializer: CacheBabbleSerializer = CacheBabbleSerializer(
             followings_babble, many=True
@@ -226,8 +233,8 @@ class BabbleViewSet(viewsets.ModelViewSet):
 
         value: Dict[int, Any] = {}
 
-        for babble in serializer.data:
-            value[babble.get("id")] = babble
+        for data in serializer.data:
+            value[data.get("id")] = data
 
         user_cache.set(request.user.id, value, 60 * 60 * 24 * 7)
 

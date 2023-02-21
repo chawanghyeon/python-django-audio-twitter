@@ -47,7 +47,7 @@ class Babble(models.Model):
     audio = models.FileField(upload_to=audio_file_path, blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     modified = models.DateTimeField(auto_now=True, blank=True, null=True)
-    tags = models.ManyToManyField(Tag, blank=True, null=True)
+    tags = models.ManyToManyField(Tag, blank=True)
     like_count = models.IntegerField(default=0, blank=True, null=True)
     comment_count = models.IntegerField(default=0, blank=True, null=True)
     rebabble_count = models.IntegerField(default=0, blank=True, null=True)
@@ -72,7 +72,7 @@ class Comment(models.Model):
 
 class Follower(models.Model):
     id = models.BigAutoField(primary_key=True, unique=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, related_name="self", on_delete=models.CASCADE)
     following = models.ForeignKey(
         User, related_name="following", on_delete=models.CASCADE
     )
