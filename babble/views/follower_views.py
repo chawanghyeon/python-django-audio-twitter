@@ -1,5 +1,7 @@
-from typing import List, Optional, Type
+from typing import Dict, List, Optional, Type
 
+from django.core.cache import caches
+from django.core.cache.backends.base import BaseCache
 from django.db import DatabaseError, transaction
 from django.db.models import F
 from django.db.models.manager import BaseManager
@@ -10,6 +12,8 @@ from rest_framework.response import Response
 
 from ..models import *
 from ..serializers import *
+
+user_cache: BaseCache = caches["default"]
 
 
 class FollowerViewSet(viewsets.ModelViewSet):
@@ -39,6 +43,8 @@ class FollowerViewSet(viewsets.ModelViewSet):
                 user.update(following=F("following") + 1)
                 following.update(followers=F("followers") + 1)
 
+                user_cache.delete(user.id)
+
         except DatabaseError:
             return Response(
                 {"error": "Cancle follower"}, status=status.HTTP_409_CONFLICT
@@ -63,6 +69,8 @@ class FollowerViewSet(viewsets.ModelViewSet):
                 request.user.update(following=F("following") - 1)
                 following.update(followers=F("followers") - 1)
                 follower.delete()
+
+                user_cache.delete(request.user.id)
 
         except DatabaseError:
             return Response(
