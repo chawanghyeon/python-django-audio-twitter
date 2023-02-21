@@ -4,6 +4,8 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import AnonymousUser
+from django.core.cache import caches
+from django.core.cache.backends.base import BaseCache
 from django.db import DatabaseError, transaction
 from django.db.models import F
 from django.db.models.manager import BaseManager
@@ -14,6 +16,9 @@ from rest_framework.response import Response
 
 from ..models import *
 from ..serializers import *
+
+user_cache: BaseCache = caches["default"]
+babble_cache: BaseCache = caches["pymemcache"]
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -83,6 +88,11 @@ class UserViewSet(viewsets.ModelViewSet):
                 User.objects.filter(follower__following=check).update(
                     following=F("following") - 1
                 )
+                user_cache.delete(check.id)
+
+                for babble in Babble.objects.filter(user=check):
+                    babble_cache.delete(babble.id)
+
                 check.delete()
 
         except DatabaseError:
