@@ -1,3 +1,4 @@
+from ast import Delete
 from typing import Any, Dict, List, Optional, Type
 
 from django.core.cache import caches
@@ -15,7 +16,8 @@ from ..stt import STT
 
 stt: STT = STT()
 user_cache: BaseCache = caches["default"]
-babble_cache: BaseCache = caches["pymemcache"]
+babble_cache: BaseCache = caches["second"]
+# 유저가 회원탈퇴 했을 때 다른 유저들 캐시 어떻게 처리할지 생각하기
 
 
 class BabbleViewSet(viewsets.ModelViewSet):
@@ -202,14 +204,15 @@ class BabbleViewSet(viewsets.ModelViewSet):
     def list(self, request: HttpRequest) -> Response:
         value: Any = user_cache.get(request.user.id)
 
-        if value is not None:
+        if value is not None and len(value) > 0:
             babbles: list[Any] = []
-            for id in value.values():
+            for id in value:
                 if babble_cache.get(id) is not None:
                     babbles.append(babble_cache.get(id))
                     continue
                 babble: Optional[Babble] = Babble.objects.get_or_none(pk=id)
                 if babble is None:
+                    babble_cache.delete(id)
                     continue
                 serializer: BabbleSerializer = BabbleSerializer(babble)
                 babbles.append(serializer.data)
@@ -219,23 +222,17 @@ class BabbleViewSet(viewsets.ModelViewSet):
 
             return Response(serializer.data, status=status.HTTP_200_OK)
 
-        followings_babble: BaseManager[Babble] = Babble.objects.filter(
-            Q(user__in=request.user.self.followings.all()) | Q(user=request.user)
+        babbles: BaseManager[Babble] = Babble.objects.filter(
+            Q(user__in=request.user.self.all().values_list("following", flat=True))
+            | Q(user=request.user)
         ).order_by("-created")[:20]
 
-        serializer: CacheBabbleSerializer = CacheBabbleSerializer(
-            followings_babble, many=True
-        )
+        serializer: CacheBabbleSerializer = CacheBabbleSerializer(babbles, many=True)
+        serializer = self.check_like_and_rebabble(babbles, request.user, serializer)
 
-        serializer = self.check_like_and_rebabble(
-            followings_babble, request.user, serializer
-        )
-
-        value: Dict[int, Any] = {}
-
-        for data in serializer.data:
-            value[data.get("id")] = data
+        value: list[Any] = [data["id"] for data in serializer.data]
 
         user_cache.set(request.user.id, value, 60 * 60 * 24 * 7)
 
+        serializer: BabbleSerializer = BabbleSerializer(babbles, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

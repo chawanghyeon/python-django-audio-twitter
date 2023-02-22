@@ -18,7 +18,7 @@ from ..models import *
 from ..serializers import *
 
 user_cache: BaseCache = caches["default"]
-babble_cache: BaseCache = caches["pymemcache"]
+babble_cache: BaseCache = caches["second"]
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -43,7 +43,6 @@ class UserViewSet(viewsets.ModelViewSet):
     def partial_update(
         self, request: HttpRequest, pk: Optional[int] = None
     ) -> Response:
-
         user: Optional[User] = User.objects.get_or_none(pk=pk)
 
         if user == None:

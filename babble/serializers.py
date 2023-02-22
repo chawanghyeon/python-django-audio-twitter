@@ -5,7 +5,7 @@ from .models import *
 
 class UserInSerializer(ModelSerializer):
     class Meta:
-        fields: str = (
+        fields: tuple = (
             "id",
             "nickname",
             "first_name",
@@ -77,7 +77,7 @@ class CacheBabbleSerializer(ModelSerializer):
     is_rebabbled: bool = False
 
     class Meta:
-        fields: str = "id"
+        fields: tuple = ("id",)
         model: Babble = Babble
         depth: int = 1
 
