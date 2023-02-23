@@ -1,8 +1,6 @@
-from ast import Delete
-from typing import Any, Dict, List, Optional, Type
+from typing import Optional, Type
 
 from django.core.cache import caches
-from django.core.cache.backends.base import BaseCache
 from django.db import DatabaseError, transaction
 from django.db.models import F, Q
 from django.db.models.manager import BaseManager
@@ -14,10 +12,9 @@ from ..models import *
 from ..serializers import *
 from ..stt import STT
 
-stt: STT = STT()
-user_cache: BaseCache = caches["default"]
-babble_cache: BaseCache = caches["second"]
-# 유저가 회원탈퇴 했을 때 다른 유저들 캐시 어떻게 처리할지 생각하기
+stt = STT()
+user_cache = caches["default"]
+babble_cache = caches["second"]
 
 
 class BabbleViewSet(viewsets.ModelViewSet):
@@ -25,45 +22,43 @@ class BabbleViewSet(viewsets.ModelViewSet):
     serializer_class: Type[BabbleSerializer] = BabbleSerializer
 
     def save_keywords(self, babble: Babble) -> Babble:
-        keywords: List[str] = stt.get_keywords(babble.audio.path)
+        keywords = stt.get_keywords(babble.audio.path)
+        tags = []
 
         for keyword in keywords:
-            tag: Tag = Tag.objects.get_or_create(text=keyword)
-            babble.tags.add(tag)
+            tag, _ = Tag.objects.get_or_create(text=keyword)
+            tags.append(tag)
 
+        babble.tags.add(*tags)
         babble.save()
 
         return babble
 
     def set_follower_cache(self, babble: Babble, user: User) -> None:
-        followers: BaseManager[User] = user.following.all()
-        serializer: CacheBabbleSerializer = CacheBabbleSerializer(babble)
+        followers = user.following.all()
+        serializer = CacheBabbleSerializer(babble)
 
         for follower in followers:
-            value: Dict = user_cache.get(follower.id)
+            user_cache_data = user_cache.get(follower.id) or {}
 
-            if value is None:
-                value = {}
+            if user_cache_data.id in user_cache_data:
+                del user_cache_data[id]
 
-            if value.get(id) is not None:
-                del value[id]
+            user_cache_data[babble.id] = serializer.data
 
-            value[babble.id] = serializer.data
+            if len(user_cache_data) > 20:
+                user_cache_data.popitem(last=False)
 
-            if len(value) > 20:
-                value.popitem(last=False)
-
-            user_cache.set(follower.id, value, 60 * 60 * 24 * 7)
+            user_cache.set(follower.id, user_cache_data, 60 * 60 * 24 * 7)
 
     def set_rebabble_cache(self, rebabble: Babble, user: User) -> None:
-        serializer: BabbleSerializer = BabbleSerializer(rebabble)
+        babble_cache.set(rebabble.id, rebabble, 60 * 60 * 24 * 7)
 
-        babble_cache.set(rebabble.id, serializer.data, 60 * 60 * 24 * 7)
+        user_cache_data = user_cache.get(user.id)
 
-        value: Dict = user_cache.get(user.id)
-
-        if value.get(rebabble.id) is not None:
-            value[rebabble.id]["rebabbled"] = True
+        if user_cache_data and rebabble.id in user_cache_data:
+            user_cache_data[rebabble.id]["rebabbled"] = True
+            user_cache.set(user.id, user_cache_data, 60 * 60 * 24 * 7)
 
     def check_like_and_rebabble(
         self,
@@ -71,47 +66,40 @@ class BabbleViewSet(viewsets.ModelViewSet):
         user: User,
         serializer: CacheBabbleSerializer,
     ) -> CacheBabbleSerializer:
-        likes: BaseManager[Like] = Like.objects.filter(
-            babble__in=followings_babble, user=user
+        babble_ids = [babble["id"] for babble in serializer.data]
+        likes = Like.objects.filter(babble_id__in=babble_ids, user=user).values_list(
+            "babble_id", flat=True
         )
-
-        for like in likes:
-            for babble in serializer.data:
-                if babble.get("id") == like.babble.id:
-                    babble["is_liked"] = True
-
-        rebabbles: BaseManager[Babble] = Babble.objects.filter(
+        rebabbles = Babble.objects.filter(
             user=user, rebabble__in=followings_babble
-        )
+        ).values_list("rebabble_id", flat=True)
 
-        for rebabble in rebabbles:
-            for babble in serializer.data:
-                if babble.get("id") == rebabble.rebabble.id:
-                    babble["is_rebabbled"] = True
+        for babble in serializer.data:
+            if babble["id"] in likes:
+                babble["is_liked"] = True
+            if babble["id"] in rebabbles:
+                babble["is_rebabbled"] = True
 
         return serializer
 
     def create(self, request: HttpRequest) -> Response:
-        serializer: BabbleSerializer = BabbleSerializer(data=request.data)
+        serializer = BabbleSerializer(data=request.data)
 
-        if serializer.is_valid() == False:
+        if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             with transaction.atomic():
-                babble: Babble = serializer.save(user=request.user)
+                babble = serializer.save(user=request.user)
                 babble = self.save_keywords(babble)
 
-                serializer: BabbleSerializer = BabbleSerializer(babble)
-                babble_cache.set(babble.id, serializer.data, 60 * 60 * 24 * 7)
-
+                babble_cache.set(babble.id, babble, 60 * 60 * 24 * 7)
                 self.set_follower_cache(babble, request.user)
 
-                if babble.rebabble != None:
-                    rebabble: Babble = babble.rebabble
-                    rebabble.update(rebabble_count=F("rebabble_count") + 1)
+                if babble.rebabble:
+                    babble.rebabble.update(rebabble_count=F("rebabble_count") + 1)
 
-                    self.set_rebabble_cache(rebabble, request.user)
+                    self.set_rebabble_cache(babble.rebabble, request.user)
 
         except DatabaseError:
             return Response(
@@ -125,42 +113,41 @@ class BabbleViewSet(viewsets.ModelViewSet):
         )
 
     def retrieve(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
-        value: Any = user_cache.get(request.user.id)
+        babble_cache_data = babble_cache.get(pk)
 
-        if value is not None and value.get(pk) is not None:
-            return Response(value.get(pk), status=status.HTTP_200_OK)
+        if babble_cache_data:
+            return Response(babble_cache_data, status=status.HTTP_200_OK)
 
-        babble: Optional[Babble] = Babble.objects.get_or_none(pk=pk)
-
-        if babble is None:
+        try:
+            babble = Babble.objects.select_related("tags").get(pk=pk)
+        except Babble.DoesNotExist:
             return Response(
                 {"error": "Babble not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
-        serializer: BabbleSerializer = BabbleSerializer(babble)
+        serializer = BabbleSerializer(babble)
+        babble_cache.set(pk, serializer.data, 60 * 60 * 24 * 7)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def update(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
-        babble: Optional[Babble] = Babble.objects.get_or_none(pk=pk)
+        try:
+            with transaction.atomic():
+                babble = Babble.objects.select_related("tags").get(pk=pk)
+                serializer = BabbleSerializer(babble, data=request.data)
 
-        if babble is None:
+                if not serializer.is_valid():
+                    raise DatabaseError
+
+                babble = serializer.save()
+                babble.tags.clear()
+                babble = self.save_keywords(babble)
+                self.set_follower_cache(babble, request.user)
+
+        except Babble.DoesNotExist:
             return Response(
                 {"error": "Babble not found"}, status=status.HTTP_404_NOT_FOUND
             )
-
-        serializer: BabbleSerializer = BabbleSerializer(babble, data=request.data)
-
-        if serializer.is_valid() == False:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            with transaction.atomic():
-                babble: Babble = serializer.save()
-                babble.tags.clear()
-                babble = self.save_keywords(babble)
-
-                self.set_follower_cache(babble, request.user)
 
         except DatabaseError:
             return Response(
@@ -173,19 +160,19 @@ class BabbleViewSet(viewsets.ModelViewSet):
         )
 
     def destroy(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
-        babble: Optional[Babble] = Babble.objects.get_or_none(pk=pk)
-
-        if babble is None:
-            return Response(
-                {"error": "Babble not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-
         try:
             with transaction.atomic():
-                if babble.rebabble != None:
+                babble = Babble.objects.select_related("rebabble").get(pk=pk)
+
+                if babble.rebabble is not None:
                     babble.rebabble.update(rebabble_count=F("rebabble_count") - 1)
 
                 babble.delete()
+
+        except Babble.DoesNotExist:
+            return Response(
+                {"error": "Babble not found"}, status=status.HTTP_404_NOT_FOUND
+            )
 
         except DatabaseError:
             return Response(
@@ -193,46 +180,30 @@ class BabbleViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-        value: Any = babble_cache.get(babble.id)
-
-        babble_cache.set(babble.id, value, 60 * 60 * 24 * 7)
+        babble_cache.delete(pk)
 
         return Response(
             {"message": "Babble deleted successfully"}, status=status.HTTP_200_OK
         )
 
     def list(self, request: HttpRequest) -> Response:
-        value: Any = user_cache.get(request.user.id)
+        user_cache_data = user_cache.get(request.user.id)
 
-        if value is not None and len(value) > 0:
-            babbles: list[Any] = []
-            for id in value:
-                if babble_cache.get(id) is not None:
-                    babbles.append(babble_cache.get(id))
-                    continue
-                babble: Optional[Babble] = Babble.objects.get_or_none(pk=id)
-                if babble is None:
-                    babble_cache.delete(id)
-                    continue
-                serializer: BabbleSerializer = BabbleSerializer(babble)
-                babbles.append(serializer.data)
-                babble_cache.set(babble.id, serializer.data, 60 * 60 * 24 * 7)
+        if user_cache_data is not None:
+            babbles = [
+                babble_cache.get(id) or Babble.objects.get_or_none(pk=id)
+                for id in user_cache_data
+            ]
+            babbles = [babble for babble in babbles if babble is not None]
+        else:
+            babbles = Babble.objects.filter(
+                Q(user__in=request.user.self.all().values_list("following", flat=True))
+                | Q(user=request.user)
+            ).order_by("-created")[:20]
+            babbles_ids = [babble.id for babble in babbles]
+            user_cache.set(request.user.id, babbles_ids, 60 * 60 * 24 * 7)
 
-            serializer: BabbleSerializer = BabbleSerializer(babbles, many=True)
-
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        babbles: BaseManager[Babble] = Babble.objects.filter(
-            Q(user__in=request.user.self.all().values_list("following", flat=True))
-            | Q(user=request.user)
-        ).order_by("-created")[:20]
-
-        serializer: CacheBabbleSerializer = CacheBabbleSerializer(babbles, many=True)
+        serializer = BabbleSerializer(babbles, many=True)
         serializer = self.check_like_and_rebabble(babbles, request.user, serializer)
 
-        value: list[Any] = [data["id"] for data in serializer.data]
-
-        user_cache.set(request.user.id, value, 60 * 60 * 24 * 7)
-
-        serializer: BabbleSerializer = BabbleSerializer(babbles, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
