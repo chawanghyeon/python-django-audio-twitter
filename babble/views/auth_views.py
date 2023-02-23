@@ -22,37 +22,35 @@ class AuthViewSet(viewsets.GenericViewSet):
 
     @action(detail=False, methods=["post"], url_name="signup")
     def signup(self, request: HttpRequest) -> Response:
-        request.data["password"] = make_password(request.data.get("password"))
-        serializer: UserSerializer = UserSerializer(data=request.data)
+        serializer = UserSerializer(data=request.data)
 
-        if serializer.is_valid() == False:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if serializer.is_valid():
+            serializer.save(password=make_password(request.data.get("password")))
+            return Response(
+                {"message": "User created successfully"}, status=status.HTTP_201_CREATED
+            )
 
-        serializer.save()
-
-        return Response(
-            {"message": "User created successfully"}, status=status.HTTP_201_CREATED
-        )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=["post"], url_name="signin")
     def signin(self, request: HttpRequest) -> Response:
-        user: AbstractBaseUser | None = authenticate(
+        user = authenticate(
             username=request.data.get("username"), password=request.data.get("password")
         )
 
-        if user == None:
+        if not user:
             return Response(
                 {"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED
             )
 
-        serializer: UserSerializer = UserSerializer(user)
-        token: Any = TokenObtainPairSerializer.get_token(user)
+        serializer = UserSerializer(user)
+        token = TokenObtainPairSerializer().validate(serializer.data)
 
         return Response(
             {
                 "user": serializer.data,
                 "message": "Login successfully",
-                "token": {"refresh": str(token), "access": str(token.access_token)},
+                "token": {"refresh": token["refresh"], "access": token["access"]},
             },
             status=status.HTTP_200_OK,
         )
