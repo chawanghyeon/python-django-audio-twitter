@@ -17,38 +17,28 @@ from rest_framework.response import Response
 from ..models import *
 from ..serializers import *
 
-user_cache: BaseCache = caches["default"]
-babble_cache: BaseCache = caches["second"]
+user_cache = caches["default"]
+babble_cache = caches["second"]
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset: BaseManager[User] = User.objects.all()
-    serializer_class: Type[UserSerializer] = UserSerializer
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
 
-    def retrieve(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
-        if pk == None:
-            user: User = request.user
+    def retrieve(self, request: HttpRequest, id: Optional[int] = None) -> Response:
+        if id:
+            user = User.objects.get_or_404(id=id)
         else:
-            user: Optional[User] = User.objects.get_or_none(pk=pk)
-
-        if user == None:
-            return Response(
-                {"error": "User not found"}, status=status.HTTP_404_NOT_FOUND
-            )
+            user = request.user
 
         serializer: UserSerializer = UserSerializer(user)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def partial_update(
-        self, request: HttpRequest, pk: Optional[int] = None
+        self, request: HttpRequest, id: Optional[int] = None
     ) -> Response:
-        user: Optional[User] = User.objects.get_or_none(pk=pk)
-
-        if user == None:
-            return Response(
-                {"error": "User not found"}, status=status.HTTP_404_NOT_FOUND
-            )
+        user = User.objects.get_or_404(id=id)
 
         if user != request.user:
             return Response(
@@ -56,49 +46,36 @@ class UserViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        serializer: UserSerializer = UserSerializer(
-            user, data=request.data, partial=True
-        )
-
-        if serializer.is_valid() == False:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+        serializer = UserSerializer(user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
         serializer.save()
 
         return Response(
             {"message": "User updated successfully"}, status=status.HTTP_200_OK
         )
 
+    @transaction.atomic
     def destroy(self, request: HttpRequest) -> Response:
-        check: AbstractBaseUser | None = authenticate(
+        user = authenticate(
             username=request.user.username, password=request.data.get("password")
         )
 
-        if check == None:
+        if user is None:
             return Response(
                 {"error": "Wrong password"}, status=status.HTTP_401_UNAUTHORIZED
             )
 
-        try:
-            with transaction.atomic():
-                User.objects.filter(follower__user=check).update(
-                    followers=F("followers") - 1
-                )
-                User.objects.filter(follower__following=check).update(
-                    following=F("following") - 1
-                )
-                user_cache.delete(check.id)
+        User.objects.filter(follower__user=user).update(followers=F("followers") - 1)
+        User.objects.filter(follower__following=user).update(
+            following=F("following") - 1
+        )
 
-                for babble in Babble.objects.filter(user=check):
-                    babble_cache.delete(babble.id)
+        user_cache.delete(user.id)
 
-                check.delete()
+        for babble in Babble.objects.filter(user=user):
+            babble_cache.delete(babble.id)
 
-        except DatabaseError:
-            return Response(
-                {"error": "Something went wrong"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+        user.delete()
 
         return Response(
             {"message": "User deleted successfully"}, status=status.HTTP_200_OK
@@ -106,14 +83,16 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["put"], url_name="password", url_path="password")
     def update_password(self, request: HttpRequest) -> Response:
-        user: AbstractBaseUser | AnonymousUser = request.user
+        user = request.user
+        old_password = request.data.get("old_password")
+        new_password = request.data.get("new_password")
 
-        if user.check_password(request.data.get("old_password")) == False:
+        if not user.check_password(old_password):
             return Response(
                 {"error": "Wrong password"}, status=status.HTTP_401_UNAUTHORIZED
             )
 
-        user.password = make_password(request.data.get("new_password"))
+        user.set_password(new_password)
         user.save()
 
         return Response(
