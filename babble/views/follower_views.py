@@ -13,69 +13,41 @@ from rest_framework.response import Response
 from ..models import *
 from ..serializers import *
 
-user_cache: BaseCache = caches["default"]
+user_cache = caches["default"]
 
 
 class FollowerViewSet(viewsets.ModelViewSet):
-    queryset: BaseManager[Follower] = Follower.objects.all()
-    serializer_classz: Type[FollowerSerializer] = FollowerSerializer
+    queryset = Follower.objects.all()
+    serializer_classz = FollowerSerializer
 
+    @transaction.atomic
     def create(self, request: HttpRequest) -> Response:
-        serializer: FollowerSerializer = FollowerSerializer(data=request.data)
+        serializer = FollowerSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
 
-        if serializer.is_valid() == False:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        following = User.objects.get_or_404(pk=request.data.get("following"))
 
-        try:
-            with transaction.atomic():
-                serializer.save()
+        request.user.update(following=F("following") + 1)
+        following.update(followers=F("followers") + 1)
 
-                user: Optional[User] = User.objects.get_or_none(
-                    pk=request.data.get("user")
-                )
-                following: Optional[User] = User.objects.get_or_none(
-                    pk=request.data.get("following")
-                )
-
-                if user is None or following is None:
-                    raise DatabaseError
-
-                user.update(following=F("following") + 1)
-                following.update(followers=F("followers") + 1)
-
-                user_cache.delete(user.id)
-
-        except DatabaseError:
-            return Response(
-                {"error": "Cancle follower"}, status=status.HTTP_409_CONFLICT
-            )
+        user_cache.delete(request.user.id)
 
         return Response(
             {"message": "Follower created successfully"},
             status=status.HTTP_201_CREATED,
         )
 
+    @transaction.atomic
     def destroy(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
-        following: Optional[User] = User.objects.get_or_none(pk=pk)
-        follower: Optional[Follower] = Follower.objects.get_or_none(
-            User=request.user, following=following
-        )
+        following = User.objects.get_or_404(pk=pk)
+        follower = Follower.objects.get_or_404(User=request.user, following=following)
 
-        if following is None or follower is None:
-            return Response({"error": "Not Found"}, status=status.HTTP_404_NOT_FOUND)
+        request.user.update(following=F("following") - 1)
+        following.update(followers=F("followers") - 1)
+        follower.delete()
 
-        try:
-            with transaction.atomic():
-                request.user.update(following=F("following") - 1)
-                following.update(followers=F("followers") - 1)
-                follower.delete()
-
-                user_cache.delete(request.user.id)
-
-        except DatabaseError:
-            return Response(
-                {"error": "Cancle follower"}, status=status.HTTP_409_CONFLICT
-            )
+        user_cache.delete(request.user.id)
 
         return Response(
             {"message": "Follower deleted successfully"}, status=status.HTTP_200_OK
@@ -83,14 +55,14 @@ class FollowerViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="followings")
     def get_followings(self, request: HttpRequest) -> Response:
-        follower: List[Follower] = self.queryset.filter(follower=request.user)
-        serializer: FollowerSerializer = FollowerSerializer(follower, many=True)
+        followings = self.queryset.filter(follower=request.user)
+        serializer = FollowerSerializer(followings, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=["get"], url_path="followers")
     def get_followers(self, request: HttpRequest) -> Response:
-        follower: List[Follower] = self.queryset.filter(following=request.user)
-        serializer: FollowerSerializer = FollowerSerializer(follower, many=True)
+        followers = self.queryset.filter(following=request.user)
+        serializer = FollowerSerializer(followers, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
