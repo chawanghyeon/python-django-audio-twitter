@@ -3,6 +3,7 @@ from typing import Any
 from django.contrib.auth.models import UserManager
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
+from django.http import Http404
 
 
 class PrivateUserManager(UserManager):
@@ -12,6 +13,12 @@ class PrivateUserManager(UserManager):
         except ObjectDoesNotExist:
             return None
 
+    def get_or_404(self, **kwargs) -> Any:
+        try:
+            return self.get(**kwargs)
+        except ObjectDoesNotExist:
+            raise Http404
+
 
 class DefaultManager(models.Manager):
     def get_or_none(self, **kwargs) -> Any | None:
@@ -19,6 +26,12 @@ class DefaultManager(models.Manager):
             return self.get(**kwargs)
         except ObjectDoesNotExist:
             return None
+
+    def get_or_404(self, **kwargs) -> Any:
+        try:
+            return self.get(**kwargs)
+        except ObjectDoesNotExist:
+            raise Http404
 
 
 class TagManager(DefaultManager):

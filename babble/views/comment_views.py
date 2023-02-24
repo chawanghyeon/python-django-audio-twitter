@@ -11,49 +11,23 @@ from ..models import *
 from ..serializers import *
 from ..stt import STT
 
-stt: STT = STT()
+stt = STT()
 
 
 class CommentViewSet(viewsets.ModelViewSet):
-    queryset: BaseManager[Comment] = Comment.objects.all()
-    serializer_class: Type[CommentSerializer] = CommentSerializer
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
 
-    def save_keywords(self, comment: Comment) -> Comment:
-        keywords: List[str] = stt.get_keywords(comment.audio.path)
-
-        for keyword in keywords:
-            tag: Tag = Tag.objects.get_or_create(text=keyword)
-            comment.tags.add(tag)
-
-        comment.save()
-
-        return comment
-
+    @transaction.atomic
     def create(self, request: HttpRequest) -> Response:
-        serializer: CommentSerializer = CommentSerializer(data=request.data)
+        babble_id = request.data.get("babble")
+        babble = Babble.objects.get_or_404(pk=babble_id)
 
-        if serializer.is_valid() == False:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer = CommentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
 
-        try:
-            with transaction.atomic():
-                comment: Comment = serializer.save()
-                comment = self.save_keywords(comment)
-
-                babble: Optional[Babble] = Babble.objects.get_or_none(
-                    pk=request.data.get("babble")
-                )
-
-                if babble is None:
-                    raise DatabaseError
-
-                babble.update(comment_count=F("comment_count") + 1)
-
-        except DatabaseError:
-            return Response(
-                {"error": "Something went wrong"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+        babble.update(comment_count=F("comment_count") + 1)
 
         return Response(
             {"message": "Comment created successfully"},
@@ -61,64 +35,32 @@ class CommentViewSet(viewsets.ModelViewSet):
         )
 
     def update(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
-        comment: Comment = Comment.objects.get_or_none(pk=pk)
+        comment = Comment.objects.get_or_404(pk=pk)
 
-        if comment is None:
-            return Response(
-                {"error": "Comment not found"}, status=status.HTTP_404_NOT_FOUND
-            )
+        serializer = CommentSerializer(comment, data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        serializer: CommentSerializer = CommentSerializer(comment, data=request.data)
-
-        if serializer.is_valid() == False:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        comment: Comment = serializer.save()
-        comment = self.save_keywords(comment)
-
-        serializer: CommentSerializer = CommentSerializer(comment)
+        comment = serializer.save()
+        serializer = CommentSerializer(comment)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @transaction.atomic
     def destroy(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
-        comment: Optional[Comment] = Comment.objects.get_or_none(pk=pk)
+        comment = Comment.objects.get_or_404(pk=pk)
+        babble = Babble.objects.get_or_404(pk=comment.babble.id)
 
-        if comment is None:
-            return Response(
-                {"error": "Comment not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-
-        try:
-            with transaction.atomic():
-                babble: Optional[Babble] = Babble.objects.get_or_none(
-                    pk=comment.babble.id
-                )
-
-                if babble is None:
-                    raise DatabaseError
-
-                babble.update(comment_count=F("comment_count") - 1)
-                comment.delete()
-
-        except DatabaseError:
-            return Response(
-                {"error": "Something went wrong"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+        babble.update(comment_count=F("comment_count") - 1)
+        comment.delete()
 
         return Response(
             {"message": "Comment deleted successfully"}, status=status.HTTP_200_OK
         )
 
     def retrieve(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
-        babble: Optional[Babble] = Babble.objects.get_or_none(pk=pk)
+        babble = Babble.objects.get_or_404(pk=pk)
 
-        if babble is None:
-            return Response(
-                {"error": "Babble not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-
-        comments: BaseManager[Comment] = self.queryset.filter(babble=babble)
-        serializer: CommentSerializer = CommentSerializer(comments, many=True)
+        comments = Comment.objects.filter(babble=babble)
+        serializer = CommentSerializer(comments, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
