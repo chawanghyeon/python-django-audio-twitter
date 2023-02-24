@@ -1,5 +1,5 @@
 from re import S
-from typing import Optional, Type
+from typing import List, Optional, Type
 
 from django.core.cache import caches
 from django.db import transaction
@@ -66,8 +66,8 @@ class BabbleViewSet(viewsets.ModelViewSet):
         self,
         followings_babble: BaseManager[Babble],
         user: User,
-        serializer: CacheBabbleSerializer,
-    ) -> CacheBabbleSerializer:
+        serializer: BabbleSerializer,
+    ) -> BabbleSerializer:
         babble_ids = [babble["id"] for babble in serializer.data]
         likes = Like.objects.filter(babble_id__in=babble_ids, user=user).values_list(
             "babble_id", flat=True
@@ -83,6 +83,64 @@ class BabbleViewSet(viewsets.ModelViewSet):
                 babble["is_rebabbled"] = True
 
         return serializer
+
+    def get_babbles_from_cache(
+        self, user_cache_data: List[int], user: User
+    ) -> List[Babble]:
+        cached_babbles = []
+        non_cached_babbles = []
+
+        for cached_babble in user_cache_data:
+            babble = babble_cache.get(cached_babble["id"])
+            if babble:
+                if cached_babble["is_rebabbled"]:
+                    babble["is_rebabbled"] = True
+                if cached_babble["is_liked"]:
+                    babble["is_liked"] = True
+                cached_babbles.append(babble)
+            else:
+                non_cached_babbles.append(cached_babble["id"])
+
+        non_cached_babbles = self.get_non_cached_babbles(non_cached_babbles, user)
+        result = cached_babbles + non_cached_babbles
+        result.sort(key=lambda x: x["created"], reverse=True)
+        return result
+
+    def get_non_cached_babbles(
+        self, non_cached_babbles: List[int], user: User
+    ) -> List[dict]:
+        if not non_cached_babbles:
+            return []
+
+        babbles = (
+            Babble.objects.select_related("tags")
+            .filter(id__in=non_cached_babbles)
+            .order_by("-created")
+        )
+        serializer = BabbleSerializer(babbles, many=True)
+        serializer = self.check_like_and_rebabble(babbles, user, serializer)
+        non_cached_babbles = serializer.data
+
+        for babble in non_cached_babbles:
+            babble_cache.set(babble["id"], babble, 60 * 60 * 24 * 7)
+
+        return non_cached_babbles
+
+    def get_babbles_from_db(self, user: User) -> List[Babble]:
+        babbles = Babble.objects.filter(
+            Q(user__in=user.self.all().values_list("following", flat=True))
+            | Q(user=user)
+        ).order_by("-created")[:20]
+        babbles_ids = [babble.id for babble in babbles]
+        user_cache.set(user.id, babbles_ids, 60 * 60 * 24 * 7)
+
+        serializer = BabbleSerializer(babbles, many=True)
+        serializer = self.check_like_and_rebabble(babbles, user, serializer)
+
+        for babble in serializer.data:
+            babble_cache.set(babble["id"], babble, 60 * 60 * 24 * 7)
+
+        return serializer.data
 
     @transaction.atomic
     def create(self, request: HttpRequest) -> Response:
@@ -154,20 +212,8 @@ class BabbleViewSet(viewsets.ModelViewSet):
         user_cache_data = user_cache.get(request.user.id)
 
         if user_cache_data:
-            babbles = [
-                babble_cache.get(id) or Babble.objects.get_or_none(id=id)
-                for id in user_cache_data
-            ]
-            babbles = [babble for babble in babbles if babble is not None]
+            babbles = self.get_babbles_from_cache(user_cache_data, request.user)
         else:
-            babbles = Babble.objects.filter(
-                Q(user__in=request.user.self.all().values_list("following", flat=True))
-                | Q(user=request.user)
-            ).order_by("-created")[:20]
-            babbles_ids = [babble.id for babble in babbles]
-            user_cache.set(request.user.id, babbles_ids, 60 * 60 * 24 * 7)
+            babbles = self.get_babbles_from_db(request.user)
 
-        serializer = BabbleSerializer(babbles, many=True)
-        serializer = self.check_like_and_rebabble(babbles, request.user, serializer)
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(babbles, status=status.HTTP_200_OK)
