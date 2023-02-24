@@ -2,7 +2,7 @@ from re import S
 from typing import Optional, Type
 
 from django.core.cache import caches
-from django.db import DatabaseError, transaction
+from django.db import transaction
 from django.db.models import F, Q
 from django.db.models.manager import BaseManager
 from django.http import HttpRequest
