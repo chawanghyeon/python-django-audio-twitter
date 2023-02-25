@@ -1,4 +1,3 @@
-from re import S
 from typing import List, Optional, Type
 
 from django.core.cache import caches

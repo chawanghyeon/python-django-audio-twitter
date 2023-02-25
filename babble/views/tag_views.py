@@ -1,6 +1,5 @@
-from typing import List, Optional, Type
+from typing import Optional
 
-from django.db.models.manager import BaseManager
 from django.http import HttpRequest
 from rest_framework import status, viewsets
 from rest_framework.decorators import action

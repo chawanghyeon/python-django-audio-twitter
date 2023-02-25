@@ -1,11 +1,6 @@
-from typing import Any, Type
-
 from django.contrib.auth import authenticate
-from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.hashers import make_password
-from django.db.models.manager import BaseManager
 from django.http import HttpRequest
-from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response

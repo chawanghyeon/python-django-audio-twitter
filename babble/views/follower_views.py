@@ -1,10 +1,8 @@
-from typing import Dict, List, Optional, Type
+from typing import Optional
 
 from django.core.cache import caches
-from django.core.cache.backends.base import BaseCache
-from django.db import DatabaseError, transaction
+from django.db import transaction
 from django.db.models import F
-from django.db.models.manager import BaseManager
 from django.http import HttpRequest
 from rest_framework import status, viewsets
 from rest_framework.decorators import action

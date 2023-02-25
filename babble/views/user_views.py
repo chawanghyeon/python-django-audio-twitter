@@ -1,14 +1,9 @@
-from typing import Optional, Type
+from typing import Optional
 
 from django.contrib.auth import authenticate
-from django.contrib.auth.base_user import AbstractBaseUser
-from django.contrib.auth.hashers import make_password
-from django.contrib.auth.models import AnonymousUser
 from django.core.cache import caches
-from django.core.cache.backends.base import BaseCache
-from django.db import DatabaseError, transaction
+from django.db import transaction
 from django.db.models import F
-from django.db.models.manager import BaseManager
 from django.http import HttpRequest
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
