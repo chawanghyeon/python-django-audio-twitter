@@ -185,22 +185,22 @@ class BabbleViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
-    def retrieve(self, request: HttpRequest, id: Optional[int] = None) -> Response:
-        babble_cache_data = babble_cache.get(id)
+    def retrieve(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
+        babble_cache_data = babble_cache.get(pk)
 
         if babble_cache_data:
             return Response(babble_cache_data, status=status.HTTP_200_OK)
 
-        babble = Babble.objects.select_related("tags").get_or_404(id=id)
+        babble = Babble.objects.select_related("tags").get_or_404(pk=pk)
 
         serializer = BabbleSerializer(babble)
-        babble_cache.set(id, serializer.data, 60 * 60 * 24 * 7)
+        babble_cache.set(pk, serializer.data, 60 * 60 * 24 * 7)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @transaction.atomic
-    def update(self, request: HttpRequest, id: Optional[int] = None) -> Response:
-        babble = Babble.objects.select_related("tags").get_or_404(id=id)
+    def update(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
+        babble = Babble.objects.select_related("tags").get_or_404(pk=pk)
 
         serializer = BabbleSerializer(babble, data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -216,14 +216,14 @@ class BabbleViewSet(viewsets.ModelViewSet):
         )
 
     @transaction.atomic
-    def destroy(self, request: HttpRequest, id: Optional[int] = None) -> Response:
-        babble = Babble.objects.select_related("rebabble").get_or_none(id=id)
+    def destroy(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
+        babble = Babble.objects.select_related("rebabble").get_or_none(pk=pk)
 
         if babble.rebabble:
             babble.rebabble.update(rebabble_count=F("rebabble_count") - 1)
 
         babble.delete()
-        babble_cache.delete(id)
+        babble_cache.delete(pk)
 
         return Response(
             {"message": "Babble deleted successfully"}, status=status.HTTP_200_OK

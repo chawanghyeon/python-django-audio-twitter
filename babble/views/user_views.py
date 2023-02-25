@@ -20,9 +20,9 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
-    def retrieve(self, request: HttpRequest, id: Optional[int] = None) -> Response:
-        if id:
-            user = User.objects.get_or_404(id=id)
+    def retrieve(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
+        if pk:
+            user = User.objects.get_or_404(pk=pk)
         else:
             user = request.user
 
@@ -31,9 +31,9 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def partial_update(
-        self, request: HttpRequest, id: Optional[int] = None
+        self, request: HttpRequest, pk: Optional[int] = None
     ) -> Response:
-        user = User.objects.get_or_404(id=id)
+        user = User.objects.get_or_404(pk=pk)
 
         if user != request.user:
             return Response(

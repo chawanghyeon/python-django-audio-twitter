@@ -20,7 +20,7 @@ class LikeViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        babble = Babble.objects.get_or_404(id=request.data.get("babble"))
+        babble = Babble.objects.get_or_404(pk=request.data.get("babble"))
         babble.update(like_count=F("like_count") + 1)
 
         return Response(
@@ -28,8 +28,8 @@ class LikeViewSet(viewsets.ModelViewSet):
         )
 
     @transaction.atomic
-    def destroy(self, request: HttpRequest, id: Optional[int] = None) -> Response:
-        like = Like.objects.select_related("babble").get_or_404(id=id)
+    def destroy(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
+        like = Like.objects.select_related("babble").get_or_404(pk=pk)
 
         like.babble.update(like_count=F("like_count") - 1)
         like.delete()
@@ -38,9 +38,9 @@ class LikeViewSet(viewsets.ModelViewSet):
             {"message": "Like deleted successfully"}, status=status.HTTP_200_OK
         )
 
-    def list(self, request: HttpRequest, id: Optional[int] = None) -> Response:
-        if id:
-            user = User.objects.get_or_404(id=id)
+    def list(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
+        if pk:
+            user = User.objects.get_or_404(pk=pk)
         else:
             user = request.user
 

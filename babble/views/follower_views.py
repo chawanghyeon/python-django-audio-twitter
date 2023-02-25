@@ -24,7 +24,7 @@ class FollowerViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        following = User.objects.get_or_404(id=request.data.get("following"))
+        following = User.objects.get_or_404(pk=request.data.get("following"))
 
         request.user.update(following=F("following") + 1)
         following.update(followers=F("followers") + 1)
@@ -37,8 +37,8 @@ class FollowerViewSet(viewsets.ModelViewSet):
         )
 
     @transaction.atomic
-    def destroy(self, request: HttpRequest, id: Optional[int] = None) -> Response:
-        following = User.objects.get_or_404(id=id)
+    def destroy(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
+        following = User.objects.get_or_404(pk=pk)
         follower = Follower.objects.get_or_404(User=request.user, following=following)
 
         request.user.update(following=F("following") - 1)

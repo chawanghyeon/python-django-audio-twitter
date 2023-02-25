@@ -20,7 +20,7 @@ class CommentViewSet(viewsets.ModelViewSet):
     @transaction.atomic
     def create(self, request: HttpRequest) -> Response:
         babble_id = request.data.get("babble")
-        babble = Babble.objects.get_or_404(id=babble_id)
+        babble = Babble.objects.get_or_404(pk=babble_id)
 
         serializer = CommentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -33,8 +33,8 @@ class CommentViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
-    def update(self, request: HttpRequest, id: Optional[int] = None) -> Response:
-        comment = Comment.objects.get_or_404(id=id)
+    def update(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
+        comment = Comment.objects.get_or_404(pk=pk)
 
         serializer = CommentSerializer(comment, data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -45,9 +45,9 @@ class CommentViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @transaction.atomic
-    def destroy(self, request: HttpRequest, id: Optional[int] = None) -> Response:
-        comment = Comment.objects.get_or_404(id=id)
-        babble = Babble.objects.get_or_404(id=comment.babble.id)
+    def destroy(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
+        comment = Comment.objects.get_or_404(pk=pk)
+        babble = Babble.objects.get_or_404(pk=comment.babble.id)
 
         babble.update(comment_count=F("comment_count") - 1)
         comment.delete()
@@ -56,8 +56,8 @@ class CommentViewSet(viewsets.ModelViewSet):
             {"message": "Comment deleted successfully"}, status=status.HTTP_200_OK
         )
 
-    def retrieve(self, request: HttpRequest, id: Optional[int] = None) -> Response:
-        babble = Babble.objects.get_or_404(id=id)
+    def retrieve(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
+        babble = Babble.objects.get_or_404(pk=pk)
 
         comments = Comment.objects.filter(babble=babble)
         serializer = CommentSerializer(comments, many=True)
