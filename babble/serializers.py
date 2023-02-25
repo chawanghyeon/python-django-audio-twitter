@@ -1,5 +1,3 @@
-from typing import Dict
-
 from rest_framework.serializers import (
     CharField,
     ModelSerializer,
