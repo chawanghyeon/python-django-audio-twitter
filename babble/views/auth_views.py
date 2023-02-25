@@ -16,9 +16,9 @@ from ..serializers import *
 
 
 class AuthViewSet(viewsets.GenericViewSet):
-    queryset: BaseManager[User] = User.objects.all()
-    serializer_class: Type[UserSerializer] = UserSerializer
-    permission_classes: tuple = tuple()
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = tuple()
 
     @action(detail=False, methods=["post"], url_name="signup")
     def signup(self, request: HttpRequest) -> Response:
