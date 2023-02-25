@@ -1,11 +1,18 @@
-from rest_framework.serializers import CharField, ModelSerializer, StringRelatedField
+from typing import Dict
+
+from rest_framework.serializers import (
+    CharField,
+    ModelSerializer,
+    SerializerMethodField,
+    StringRelatedField,
+)
 
 from .models import *
 
 
 class UserInSerializer(ModelSerializer):
     class Meta:
-        fields: tuple = (
+        fields = (
             "id",
             "nickname",
             "first_name",
@@ -18,75 +25,71 @@ class UserInSerializer(ModelSerializer):
 
 
 class CommentSerializer(ModelSerializer):
-    user: UserInSerializer = UserInSerializer(many=False)
+    user = UserInSerializer(many=False)
 
     class Meta:
-        model: Comment = Comment
-        depth: int = 1
-        exclude: tuple = ("babble",)
+        model = Comment
+        depth = 1
+        exclude = ("babble",)
 
 
 class FollowerSerializer(ModelSerializer):
-    user: StringRelatedField = StringRelatedField(many=False)
-    following: StringRelatedField = StringRelatedField(many=False)
+    user = StringRelatedField(many=False)
+    following = StringRelatedField(many=False)
 
     class Meta:
-        fields: str = "__all__"
-        model: Follower = Follower
-        depth: int = 1
+        fields = "__all__"
+        model = Follower
+        depth = 1
 
 
 class LikeSerializer(ModelSerializer):
-    user: StringRelatedField = StringRelatedField(many=False)
+    user = StringRelatedField(many=False)
 
     class Meta:
-        fields: str = "__all__"
-        model: Like = Like
-        depth: int = 1
+        fields = "__all__"
+        model = Like
+        depth = 1
 
 
 class TagSerializer(ModelSerializer):
     class Meta:
-        fields: str = "__all__"
-        model: Tag = Tag
-        depth: int = 1
+        fields = "__all__"
+        model = Tag
+        depth = 1
 
 
 class UserSerializer(ModelSerializer):
-    password: CharField = CharField(write_only=True)
+    password = CharField(write_only=True)
 
     class Meta:
-        fields: str = "__all__"
-        model: User = User
-        depth: int = 1
+        fields = "__all__"
+        model = User
+        depth = 1
 
 
 class BabbleSerializer(ModelSerializer):
-    user: UserInSerializer = UserInSerializer(many=False, read_only=True)
-    tags: StringRelatedField = StringRelatedField(many=True)
-    is_liked: bool = False
-    is_rebabbled: bool = False
+    user = UserInSerializer(many=False, read_only=True)
+    tags = StringRelatedField(many=True)
+    is_liked = SerializerMethodField()
+    is_rebabbled = SerializerMethodField()
 
     class Meta:
-        fields: str = "__all__"
-        model: Babble = Babble
-        depth: int = 1
+        fields = "__all__"
+        model = Babble
+        depth = 1
 
+    def get_is_liked(self, obj: Babble) -> bool:
+        return False
 
-class CacheBabbleSerializer(ModelSerializer):
-    is_liked: bool = False
-    is_rebabbled: bool = False
-
-    class Meta:
-        fields: tuple = ("id",)
-        model: Babble = Babble
-        depth: int = 1
+    def get_is_rebabbled(self, obj: Babble) -> bool:
+        return False
 
 
 class LikeBabbleSerializer(ModelSerializer):
-    babbles: BabbleSerializer = BabbleSerializer(many=True)
+    babbles = BabbleSerializer(many=True)
 
     class Meta:
-        fields: str = "babble"
-        model: Like = Like
-        depth: int = 1
+        fields = ("babble",)
+        model = Like
+        depth = 1

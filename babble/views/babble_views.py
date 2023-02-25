@@ -37,15 +37,27 @@ class BabbleViewSet(viewsets.ModelViewSet):
 
     def set_follower_cache(self, babble: Babble, user: User) -> None:
         followers = user.following.all()
-        serializer = CacheBabbleSerializer(babble)
+
+        data_for_cache = {
+            "id": babble.id,
+            "is_rebabble": False,
+            "is_like": False,
+        }
 
         for follower in followers:
-            user_cache_data = user_cache.get(follower.id) or {}
+            user_cache_data = user_cache.get(follower.id) or []
 
-            if user_cache_data.id in user_cache_data:
-                del user_cache_data[id]
+            for data in user_cache_data:
+                if data["id"] == babble.id:
+                    if data["is_rebabble"]:
+                        data_for_cache["is_rebabble"] = True
+                    if data["is_like"]:
+                        data_for_cache["is_like"] = True
 
-            user_cache_data[babble.id] = serializer.data
+                    user_cache_data.remove(data)
+                    break
+
+            user_cache_data.append(data_for_cache)
 
             if len(user_cache_data) > 20:
                 user_cache_data.popitem(last=False)
@@ -131,11 +143,21 @@ class BabbleViewSet(viewsets.ModelViewSet):
             Q(user__in=user.self.all().values_list("following", flat=True))
             | Q(user=user)
         ).order_by("-created")[:20]
-        babbles_ids = [babble.id for babble in babbles]
-        user_cache.set(user.id, babbles_ids, 60 * 60 * 24 * 7)
 
         serializer = BabbleSerializer(babbles, many=True)
         serializer = self.check_like_and_rebabble(babbles, user, serializer)
+
+        data = []
+        for babble in serializer.data:
+            data.append(
+                {
+                    "id": babble["id"],
+                    "is_rebabbled": babble["is_rebabbled"],
+                    "is_liked": babble["is_liked"],
+                }
+            )
+
+        user_cache.set(user.id, data, 60 * 60 * 24 * 7)
 
         for babble in serializer.data:
             babble_cache.set(babble["id"], babble, 60 * 60 * 24 * 7)
