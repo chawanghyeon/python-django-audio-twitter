@@ -61,23 +61,9 @@ urlpatterns += [
     ),
 ]
 
-urlpatterns += [
-    path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
-]
-
 # Simple JWT
 urlpatterns += [
     path("auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("auth/token/verify/", TokenVerifyView.as_view(), name="token_verify"),
 ]
-
-if settings.DEBUG:
-    import debug_toolbar
-
-    urlpatterns += [
-        path("__debug__/", include(debug_toolbar.urls)),
-    ]
-    import mimetypes
-
-    mimetypes.add_type("application/javascript", ".js", True)

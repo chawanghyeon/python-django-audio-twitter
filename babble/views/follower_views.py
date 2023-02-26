@@ -16,7 +16,7 @@ user_cache = caches["default"]
 
 class FollowerViewSet(viewsets.ModelViewSet):
     queryset = Follower.objects.all()
-    serializer_classz = FollowerSerializer
+    serializer_class = FollowerSerializer
 
     @transaction.atomic
     def create(self, request: HttpRequest) -> Response:

@@ -189,18 +189,21 @@ CACHES = {
 
 if DEBUG:
     MIDDLEWARE += [
-        "debug_toolbar.middleware.DebugToolbarMiddleware",
+        "querycount.middleware.QueryCountMiddleware",
     ]
 
-    INSTALLED_APPS += [
-        "debug_toolbar",
-    ]
-
-    DEBUG_TOOLBAR_CONFIG = {
-        "SHOW_TOOLBAR_CALLBACK": lambda request: True,
-        "INTERCEPT_REDIRECTS": False,
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+            },
+        },
+        "loggers": {
+            "django.db.backends": {
+                "handlers": ["console"],
+                "level": "DEBUG",
+            },
+        },
     }
-
-    REST_FRAMEWORK["DEFAULT_PERMISSION_CLASSES"] = [
-        "babble.permissions.IsOwnerOrReadOnly",
-    ]

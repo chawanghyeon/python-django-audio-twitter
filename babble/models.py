@@ -17,6 +17,7 @@ class User(AbstractUser):
     bio = models.CharField(max_length=140, blank=True)
     follower_count = models.IntegerField(default=0)
     following_count = models.IntegerField(default=0)
+    created = models.DateTimeField(auto_now_add=True)
     objects = PrivateUserManager()
 
     def __unicode__(self):
@@ -28,7 +29,7 @@ class User(AbstractUser):
 
 class Tag(models.Model):
     text = models.CharField(max_length=20, unique=True, primary_key=True)
-    crated = models.DateTimeField(auto_now_add=True)
+    created = models.DateTimeField(auto_now_add=True)
     objects = TagManager()
 
     def __unicode__(self):
