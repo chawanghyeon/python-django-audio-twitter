@@ -191,16 +191,16 @@ class BabbleViewSet(viewsets.ModelViewSet):
         if babble_cache_data:
             return Response(babble_cache_data, status=status.HTTP_200_OK)
 
-        babble = Babble.objects.select_related("tags").get_or_404(pk=pk)
-
+        babble = Babble.objects.select_related("tags").get(pk=pk)
         serializer = BabbleSerializer(babble)
+
         babble_cache.set(pk, serializer.data, 60 * 60 * 24 * 7)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @transaction.atomic
     def update(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
-        babble = Babble.objects.select_related("tags").get_or_404(pk=pk)
+        babble = Babble.objects.get_or_404(pk=pk)
 
         serializer = BabbleSerializer(babble, data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -217,7 +217,7 @@ class BabbleViewSet(viewsets.ModelViewSet):
 
     @transaction.atomic
     def destroy(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
-        babble = Babble.objects.select_related("rebabble").get_or_none(pk=pk)
+        babble = Babble.objects.select_related("rebabble").get(pk=pk)
 
         if babble.rebabble:
             babble.rebabble.update(rebabble_count=F("rebabble_count") - 1)
@@ -232,9 +232,11 @@ class BabbleViewSet(viewsets.ModelViewSet):
     def list(self, request: HttpRequest) -> Response:
         user_cache_data = user_cache.get(request.user.id)
 
+        user = User.objects.get(pk=1)
+
         if user_cache_data:
-            babbles = self.get_babbles_from_cache(user_cache_data, request.user)
+            babbles = self.get_babbles_from_cache(user_cache_data, user)
         else:
-            babbles = self.get_babbles_from_db(request.user)
+            babbles = self.get_babbles_from_db(user)
 
         return Response(babbles, status=status.HTTP_200_OK)

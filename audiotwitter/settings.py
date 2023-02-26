@@ -28,7 +28,7 @@ SECRET_KEY = "django-insecure-n+zg6$lq(5ja$kp8mik^0(1k($^zz3p2@qo(w%_-ung6scczx*
 DEBUG = True
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "192.168.35.1", "192.168.35.123"]
-
+INTERNAL_IPS = ["127.0.0.1", "localhost", "127.0.0.1:5173", "127.0.0.1:8000"]
 
 # Application definition
 
@@ -186,3 +186,21 @@ CACHES = {
         },
     },
 }
+
+if DEBUG:
+    MIDDLEWARE += [
+        "debug_toolbar.middleware.DebugToolbarMiddleware",
+    ]
+
+    INSTALLED_APPS += [
+        "debug_toolbar",
+    ]
+
+    DEBUG_TOOLBAR_CONFIG = {
+        "SHOW_TOOLBAR_CALLBACK": lambda request: True,
+        "INTERCEPT_REDIRECTS": False,
+    }
+
+    REST_FRAMEWORK["DEFAULT_PERMISSION_CLASSES"] = [
+        "babble.permissions.IsOwnerOrReadOnly",
+    ]

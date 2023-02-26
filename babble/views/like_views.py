@@ -16,12 +16,18 @@ class LikeViewSet(viewsets.ModelViewSet):
 
     @transaction.atomic
     def create(self, request: HttpRequest) -> Response:
+        babble_id = request.data.get("babble")
+
+        if Like.objects.filter(babble__pk=babble_id, user=request.user).exists():
+            return Response(
+                {"message": "Like already exists"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
         serializer = LikeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        serializer.save(babble_id=babble_id, user=request.user)
 
-        babble = Babble.objects.get_or_404(pk=request.data.get("babble"))
-        babble.update(like_count=F("like_count") + 1)
+        Babble.objects.filter(pk=babble_id).update(like_count=F("like_count") + 1)
 
         return Response(
             {"message": "Like created successfully"}, status=status.HTTP_201_CREATED
@@ -29,7 +35,7 @@ class LikeViewSet(viewsets.ModelViewSet):
 
     @transaction.atomic
     def destroy(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
-        like = Like.objects.select_related("babble").get_or_404(pk=pk)
+        like = Like.objects.get_or_404(babble__pk=pk, user=request.user)
 
         like.babble.update(like_count=F("like_count") - 1)
         like.delete()

@@ -29,17 +29,14 @@ class AuthViewSet(viewsets.GenericViewSet):
 
     @action(detail=False, methods=["post"], url_name="signin")
     def signin(self, request: HttpRequest) -> Response:
-        user = authenticate(
-            username=request.data.get("username"), password=request.data.get("password")
-        )
+        data = {
+            "username": request.data.get("username"),
+            "password": request.data.get("password"),
+        }
 
-        if not user:
-            return Response(
-                {"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED
-            )
-
+        token = TokenObtainPairSerializer().validate(data)
+        user = authenticate(**data)
         serializer = UserSerializer(user)
-        token = TokenObtainPairSerializer().validate(serializer.data)
 
         return Response(
             {
