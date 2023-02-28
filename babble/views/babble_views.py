@@ -26,7 +26,7 @@ class BabbleViewSet(viewsets.ModelViewSet):
         tags = []
 
         for keyword in keywords:
-            tag, _ = Tag.objects.get_or_create(text=keyword)
+            tag = Tag.objects.get_or_create(text=keyword)
             tags.append(tag)
 
         babble.tags.add(*tags)
@@ -123,11 +123,7 @@ class BabbleViewSet(viewsets.ModelViewSet):
         if not non_cached_babbles:
             return []
 
-        babbles = (
-            Babble.objects.select_related("tags")
-            .filter(id__in=non_cached_babbles)
-            .order_by("-created")
-        )
+        babbles = Babble.objects.filter(id__in=non_cached_babbles).order_by("-created")
         serializer = BabbleSerializer(babbles, many=True)
         serializer = self.check_like_and_rebabble(babbles, user, serializer)
         non_cached_babbles = serializer.data
@@ -191,7 +187,7 @@ class BabbleViewSet(viewsets.ModelViewSet):
         if babble_cache_data:
             return Response(babble_cache_data, status=status.HTTP_200_OK)
 
-        babble = Babble.objects.select_related("tags").get(pk=pk)
+        babble = Babble.objects.get(pk=pk)
         serializer = BabbleSerializer(babble)
 
         babble_cache.set(pk, serializer.data, 60 * 60 * 24 * 7)
