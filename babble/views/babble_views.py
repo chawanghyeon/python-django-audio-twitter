@@ -1,4 +1,4 @@
-from typing import List, Optional, Type
+from typing import Dict, List, Optional, Type
 
 from django.core.cache import caches
 from django.db import transaction
@@ -15,6 +15,9 @@ from ..stt import STT
 stt = STT()
 user_cache = caches["default"]
 babble_cache = caches["second"]
+
+# user_cache.clear()
+# babble_cache.clear()
 
 
 class BabbleViewSet(viewsets.ModelViewSet):
@@ -96,7 +99,7 @@ class BabbleViewSet(viewsets.ModelViewSet):
         return serializer
 
     def get_babbles_from_cache(
-        self, user_cache_data: List[int], user: User
+        self, user_cache_data: List[Dict], user: User
     ) -> List[Babble]:
         cached_babbles = []
         non_cached_babbles = []
@@ -118,18 +121,26 @@ class BabbleViewSet(viewsets.ModelViewSet):
         return result
 
     def get_non_cached_babbles(
-        self, non_cached_babbles: List[int], user: User
+        self, non_cached_babbles: List[int], user_cache_data: List[Dict]
     ) -> List[dict]:
         if not non_cached_babbles:
             return []
 
         babbles = Babble.objects.filter(id__in=non_cached_babbles).order_by("-created")
         serializer = BabbleSerializer(babbles, many=True)
-        serializer = self.check_like_and_rebabble(babbles, user, serializer)
         non_cached_babbles = serializer.data
 
-        for babble in non_cached_babbles:
+        for babble in serializer.data:
             babble_cache.set(babble["id"], babble, 60 * 60 * 24 * 7)
+
+        for babble in non_cached_babbles:
+            for cached_babble in user_cache_data:
+                if babble["id"] == cached_babble["id"]:
+                    if cached_babble["is_rebabbled"]:
+                        babble["is_rebabbled"] = True
+                    if cached_babble["is_liked"]:
+                        babble["is_liked"] = True
+                    break
 
         return non_cached_babbles
 
@@ -140,6 +151,10 @@ class BabbleViewSet(viewsets.ModelViewSet):
         ).order_by("-created")[:20]
 
         serializer = BabbleSerializer(babbles, many=True)
+
+        for babble in serializer.data:
+            babble_cache.set(babble["id"], babble, 60 * 60 * 24 * 7)
+
         serializer = self.check_like_and_rebabble(babbles, user, serializer)
 
         data = []
@@ -153,9 +168,6 @@ class BabbleViewSet(viewsets.ModelViewSet):
             )
 
         user_cache.set(user.id, data, 60 * 60 * 24 * 7)
-
-        for babble in serializer.data:
-            babble_cache.set(babble["id"], babble, 60 * 60 * 24 * 7)
 
         return serializer.data
 
@@ -228,11 +240,9 @@ class BabbleViewSet(viewsets.ModelViewSet):
     def list(self, request: HttpRequest) -> Response:
         user_cache_data = user_cache.get(request.user.id)
 
-        user = User.objects.get(pk=1)
-
         if user_cache_data:
-            babbles = self.get_babbles_from_cache(user_cache_data, user)
+            babbles = self.get_babbles_from_cache(user_cache_data, request.user)
         else:
-            babbles = self.get_babbles_from_db(user)
+            babbles = self.get_babbles_from_db(request.user)
 
         return Response(babbles, status=status.HTTP_200_OK)

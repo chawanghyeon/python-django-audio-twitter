@@ -1,5 +1,6 @@
 from typing import Optional
 
+from django.core.cache import caches
 from django.db import transaction
 from django.db.models import F
 from django.http import HttpRequest
@@ -8,6 +9,9 @@ from rest_framework.response import Response
 
 from ..models import *
 from ..serializers import *
+
+user_cache = caches["default"]
+babble_cache = caches["second"]
 
 
 class LikeViewSet(viewsets.ModelViewSet):
@@ -29,22 +33,51 @@ class LikeViewSet(viewsets.ModelViewSet):
 
         Babble.objects.filter(pk=babble_id).update(like_count=F("like_count") + 1)
 
+        user_cache_data = user_cache.get(request.user.id)
+
+        if user_cache_data:
+            for data in user_cache_data:
+                if data["id"] == babble_id:
+                    data["is_liked"] = True
+                    break
+
+            user_cache.set(request.user.id, user_cache_data)
+
+        babble_cache_data = babble_cache.get(babble_id)
+
+        if babble_cache_data:
+            babble_cache_data["like_count"] += 1
+            babble_cache.set(babble_id, babble_cache_data)
+
         return Response(
             {"message": "Like created successfully"}, status=status.HTTP_201_CREATED
         )
 
     @transaction.atomic
-    def destroy(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
-        like = Like.objects.get_or_404(babble__pk=pk, user=request.user)
+    def destroy(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
+        Babble.objects.filter(pk=pk).update(like_count=F("like_count") - 1)
+        Like.objects.filter(babble__pk=pk, user=request.user).delete()
 
-        like.babble.update(like_count=F("like_count") - 1)
-        like.delete()
+        pk = int(pk)
+        user_cache_data = user_cache.get(request.user.id)
+        if user_cache_data:
+            for data in user_cache_data:
+                if data["id"] == pk:
+                    data["is_liked"] = False
+                    break
+
+            user_cache.set(request.user.id, user_cache_data)
+
+        babble_cache_data = babble_cache.get(pk)
+        if babble_cache_data:
+            babble_cache_data["like_count"] -= 1
+            babble_cache.set(pk, babble_cache_data)
 
         return Response(
             {"message": "Like deleted successfully"}, status=status.HTTP_200_OK
         )
 
-    def list(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
+    def list(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
         if pk:
             user = User.objects.get_or_404(pk=pk)
         else:
