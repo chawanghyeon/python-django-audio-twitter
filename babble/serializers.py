@@ -93,7 +93,7 @@ class LikeBabbleSerializer(ModelSerializer):
         depth = 1
 
 
-class RebabbleBabbleSerializer(ModelSerializer):
+class RebabbleSerializer(ModelSerializer):
     class Meta:
         fields = "__all__"
         model = Rebabble

@@ -6,7 +6,6 @@ from django.db.models import F, Q
 from django.db.models.manager import BaseManager
 from django.http import HttpRequest
 from rest_framework import status, viewsets
-from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from ..models import *
@@ -237,21 +236,3 @@ class BabbleViewSet(viewsets.ModelViewSet):
             babbles = self.get_babbles_from_db(request.user)
 
         return Response(babbles, status=status.HTTP_200_OK)
-
-    @action(detail=True, methods=["post"], url_path="rebabble")
-    def create_rebabble(
-        self, request: HttpRequest, pk: Optional[str] = None
-    ) -> Response:
-        Rebabble.objects.create(user=request.user, babble=pk)
-        Babble.objects.get(pk=pk).update(rebabble_count=F("rebabble_count") + 1)
-
-        user_cache_data = user_cache.get(request.user.id)
-
-        if user_cache_data and pk in user_cache_data:
-            user_cache_data[pk]["rebabbled"] = True
-            user_cache.set(request.user.id, user_cache_data, 60 * 60 * 24 * 7)
-
-        return Response(
-            {"message": "Rebabble created successfully"},
-            status=status.HTTP_201_CREATED,
-        )
