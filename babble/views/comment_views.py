@@ -33,7 +33,7 @@ class CommentViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
-    def update(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
+    def update(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
         comment = Comment.objects.get_or_404(pk=pk)
 
         serializer = CommentSerializer(comment, data=request.data)
@@ -45,7 +45,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @transaction.atomic
-    def destroy(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
+    def destroy(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
         comment = Comment.objects.get_or_404(pk=pk)
         babble = Babble.objects.get_or_404(pk=comment.babble.id)
 
@@ -56,7 +56,7 @@ class CommentViewSet(viewsets.ModelViewSet):
             {"message": "Comment deleted successfully"}, status=status.HTTP_200_OK
         )
 
-    def retrieve(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
+    def retrieve(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
         babble = Babble.objects.get_or_404(pk=pk)
 
         comments = Comment.objects.filter(babble=babble)

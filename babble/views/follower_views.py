@@ -37,7 +37,7 @@ class FollowerViewSet(viewsets.ModelViewSet):
         )
 
     @transaction.atomic
-    def destroy(self, request: HttpRequest, pk: Optional[int] = None) -> Response:
+    def destroy(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
         following = User.objects.get_or_404(pk=pk)
         follower = Follower.objects.get_or_404(User=request.user, following=following)
 
