@@ -42,9 +42,6 @@ class Tag(models.Model):
 class Babble(models.Model):
     id = models.BigAutoField(primary_key=True, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    rebabble = models.ForeignKey(
-        "self", on_delete=models.CASCADE, blank=True, null=True
-    )
     audio = models.FileField(upload_to=audio_file_path, blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     modified = models.DateTimeField(auto_now=True, blank=True, null=True)
@@ -93,3 +90,14 @@ class Like(models.Model):
 
     def __unicode__(self):
         return self.user.first_name + " likes " + str(self.babble.id)
+
+
+class Rebabble(models.Model):
+    id = models.BigAutoField(primary_key=True, unique=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    babble = models.ForeignKey(Babble, on_delete=models.CASCADE)
+    created = models.DateTimeField(auto_now_add=True)
+    objects = DefaultManager()
+
+    def __unicode__(self):
+        return self.user.first_name + " rebabbles " + str(self.babble.id)

@@ -91,3 +91,10 @@ class LikeBabbleSerializer(ModelSerializer):
         fields = ("babble",)
         model = Like
         depth = 1
+
+
+class RebabbleBabbleSerializer(ModelSerializer):
+    class Meta:
+        fields = "__all__"
+        model = Rebabble
+        depth = 1
