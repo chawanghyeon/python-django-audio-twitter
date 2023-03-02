@@ -16,8 +16,8 @@ stt = STT()
 user_cache = caches["default"]
 babble_cache = caches["second"]
 
-# user_cache.clear()
-# babble_cache.clear()
+user_cache.clear()
+babble_cache.clear()
 
 
 class BabbleViewSet(viewsets.ModelViewSet):
@@ -68,7 +68,6 @@ class BabbleViewSet(viewsets.ModelViewSet):
 
     def check_like_and_rebabble(
         self,
-        followings_babble: BaseManager[Babble],
         user: User,
         serializer: BabbleSerializer,
     ) -> BabbleSerializer:
@@ -76,9 +75,9 @@ class BabbleViewSet(viewsets.ModelViewSet):
         likes = Like.objects.filter(babble_id__in=babble_ids, user=user).values_list(
             "babble_id", flat=True
         )
-        rebabbles = Babble.objects.filter(
-            user=user, rebabble__in=followings_babble
-        ).values_list("rebabble_id", flat=True)
+        rebabbles = Rebabble.objects.filter(
+            babble_id__in=babble_ids, user=user
+        ).values_list("babble_id", flat=True)
 
         for babble in serializer.data:
             if babble["id"] in likes:
@@ -145,7 +144,7 @@ class BabbleViewSet(viewsets.ModelViewSet):
         for babble in serializer.data:
             babble_cache.set(babble["id"], babble, 60 * 60 * 24 * 7)
 
-        serializer = self.check_like_and_rebabble(babbles, user, serializer)
+        serializer = self.check_like_and_rebabble(user, serializer)
 
         data = []
         for babble in serializer.data:

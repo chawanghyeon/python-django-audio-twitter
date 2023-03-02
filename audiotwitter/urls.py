@@ -31,6 +31,7 @@ from babble.views import (
     comment_views,
     follower_views,
     like_views,
+    rebabble_views,
     tag_views,
     user_views,
 )
@@ -43,6 +44,7 @@ router.register(r"follower", follower_views.FollowerViewSet, basename="follower"
 router.register(r"like", like_views.LikeViewSet, basename="like")
 router.register(r"auth", auth_views.AuthViewSet, basename="auth")
 router.register(r"tag", tag_views.TagViewSet, basename="tag")
+router.register(r"rebabble", rebabble_views.RebabbleViewSet, basename="rebabble")
 
 urlpatterns = [
     path("admin/", admin.site.urls),
