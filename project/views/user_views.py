@@ -9,8 +9,8 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from ..models import *
-from ..serializers import *
+from project.models import Babble, User
+from project.serializers import UserSerializer
 
 user_cache = caches["default"]
 babble_cache = caches["second"]

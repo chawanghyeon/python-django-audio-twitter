@@ -1,8 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-from .managers import *
-from .utils import *
+from project.managers import DefaultManager, PrivateUserManager, TagManager
+from project.utils import audio_file_path, image_file_path
 
 
 class User(AbstractUser):
@@ -25,6 +25,9 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.first_name
+
+    class Meta:
+        app_label = "project"
 
 
 class Tag(models.Model):

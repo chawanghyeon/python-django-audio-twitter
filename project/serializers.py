@@ -5,7 +5,7 @@ from rest_framework.serializers import (
     StringRelatedField,
 )
 
-from .models import *
+from project.models import *
 
 
 class UserInSerializer(ModelSerializer):
@@ -18,8 +18,8 @@ class UserInSerializer(ModelSerializer):
             "image",
             "background",
         )
-        model: User = User
-        depth: int = 1
+        model = User
+        depth = 1
 
 
 class CommentSerializer(ModelSerializer):

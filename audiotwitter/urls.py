@@ -25,7 +25,7 @@ from rest_framework_simplejwt.views import (
     TokenVerifyView,
 )
 
-from babble.views import (
+from project.views import (
     auth_views,
     babble_views,
     comment_views,

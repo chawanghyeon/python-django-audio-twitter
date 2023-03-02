@@ -6,8 +6,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from ..models import *
-from ..serializers import *
+from project.models import User
+from project.serializers import UserSerializer
 
 
 class AuthViewSet(viewsets.GenericViewSet):

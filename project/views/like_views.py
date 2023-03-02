@@ -7,8 +7,9 @@ from django.http import HttpRequest
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 
-from ..models import *
-from ..serializers import *
+from project.models import Babble, Like, User
+from project.serializers import BabbleSerializer, LikeSerializer
+from project.views.views_utils import check_liked, check_rebabbled
 
 user_cache = caches["default"]
 babble_cache = caches["second"]
@@ -83,7 +84,9 @@ class LikeViewSet(viewsets.ModelViewSet):
         else:
             user = request.user
 
-        likes = self.queryset.filter(user=user)
-        serializer = LikeBabbleSerializer(likes, many=True)
+        babbles = Babble.objects.filter(like__user=user).order_by("-created")
+        serializer = BabbleSerializer(babbles, many=True)
+        check_rebabbled(serializer, user)
+        check_liked(serializer, user)
 
         return Response(serializer.data, status=status.HTTP_200_OK)

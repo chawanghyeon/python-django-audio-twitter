@@ -6,11 +6,8 @@ from django.http import HttpRequest
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 
-from ..models import *
-from ..serializers import *
-from ..stt import STT
-
-stt = STT()
+from project.models import Babble, Comment
+from project.serializers import CommentSerializer
 
 
 class CommentViewSet(viewsets.ModelViewSet):
