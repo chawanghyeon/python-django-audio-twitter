@@ -7,7 +7,7 @@ from django.http import HttpRequest
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 
-from project.models import Babble
+from project.models import Babble, Like, Rebabble
 from project.serializers import BabbleSerializer
 from project.views.views_utils import (
     get_babbles_from_cache,
@@ -18,6 +18,9 @@ from project.views.views_utils import (
 
 user_cache = caches["default"]
 babble_cache = caches["second"]
+
+user_cache.clear()
+babble_cache.clear()
 
 
 class BabbleViewSet(viewsets.ModelViewSet):
@@ -34,11 +37,21 @@ class BabbleViewSet(viewsets.ModelViewSet):
 
         set_follower_cache(babble, request.user)
 
+        user_cache_data = user_cache.get(request.user.id)
+        if user_cache_data:
+            data_for_cache = {
+                "id": babble.id,
+                "is_rebabbled": False,
+                "is_liked": False,
+            }
+            user_cache_data.append(data_for_cache)
+            user_cache.set(request.user.id, user_cache_data, 60 * 60 * 24 * 7)
+
         serializer = BabbleSerializer(babble)
         babble_cache.set(babble.id, serializer.data, 60 * 60 * 24 * 7)
 
         return Response(
-            {"message": "Babble created successfully"},
+            serializer.data,
             status=status.HTTP_201_CREATED,
         )
 
@@ -46,14 +59,24 @@ class BabbleViewSet(viewsets.ModelViewSet):
         babble_cache_data = babble_cache.get(pk)
 
         if babble_cache_data:
+            if Rebabble.objects.filter(user=request.user, babble=pk).exists():
+                babble_cache_data["is_rebabbled"] = True
+            if Like.objects.filter(user=request.user, babble=pk).exists():
+                babble_cache_data["is_liked"] = True
             return Response(babble_cache_data, status=status.HTTP_200_OK)
 
         babble = Babble.objects.get(pk=pk)
         serializer = BabbleSerializer(babble)
+        serialized_data = serializer.data
+        babble_cache.set(pk, serialized_data, 60 * 60 * 24 * 7)
 
-        babble_cache.set(pk, serializer.data, 60 * 60 * 24 * 7)
+        if Rebabble.objects.filter(user=request.user, babble=babble).exists():
+            serialized_data["is_rebabbled"] = True
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        if Like.objects.filter(user=request.user, babble=babble).exists():
+            serialized_data["is_liked"] = True
+
+        return Response(serialized_data, status=status.HTTP_200_OK)
 
     @transaction.atomic
     def update(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
@@ -67,9 +90,9 @@ class BabbleViewSet(viewsets.ModelViewSet):
 
         set_follower_cache(babble, request.user)
 
-        return Response(
-            {"message": "Babble updated successfully"}, status=status.HTTP_200_OK
-        )
+        serializer = BabbleSerializer(babble)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @transaction.atomic
     def destroy(self, request: HttpRequest, pk: Optional[str] = None) -> Response:

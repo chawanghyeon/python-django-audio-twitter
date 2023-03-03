@@ -23,7 +23,7 @@ class UserInSerializer(ModelSerializer):
 
 
 class CommentSerializer(ModelSerializer):
-    user = UserInSerializer(many=False)
+    user = UserInSerializer(many=False, read_only=True)
 
     class Meta:
         model = Comment

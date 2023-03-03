@@ -12,20 +12,24 @@ babble_cache = caches["second"]
 stt = STT()
 
 
-def check_rebabbled(serializer: BabbleSerializer, user: User) -> None:
+def check_rebabbled(serialized_babbles: Dict, user: User) -> Dict:
     rebabbled_babble_ids = set(
         Rebabble.objects.filter(user=user).values_list("babble_id", flat=True)
     )
-    for data in serializer.data:
+    for data in serialized_babbles:
         data["is_rebabbled"] = data["id"] in rebabbled_babble_ids
 
+    return serialized_babbles
 
-def check_liked(serializer: BabbleSerializer, user: User) -> None:
+
+def check_liked(serialized_babbles: Dict, user: User) -> Dict:
     liked_babbles_id = set(
         Like.objects.filter(user=user).values_list("babble_id", flat=True)
     )
-    for data in serializer.data:
+    for data in serialized_babbles:
         data["is_liked"] = data["id"] in liked_babbles_id
+
+    return serialized_babbles
 
 
 def save_keywords(babble: Babble) -> Babble:
@@ -88,7 +92,18 @@ def get_babbles_from_cache(user_cache_data: List[Dict], user: User) -> List[Babb
         else:
             non_cached_babbles.append(cached_babble["id"])
 
-    non_cached_babbles = get_non_cached_babbles(non_cached_babbles, user)
+    non_cached_babbles, non_exist_babbles = get_non_cached_babbles(
+        non_cached_babbles, user
+    )
+
+    for non_exist_babble in non_exist_babbles:
+        for cached_babble in user_cache_data:
+            if non_exist_babble == cached_babble["id"]:
+                user_cache_data.remove(cached_babble)
+                break
+
+    user_cache.set(user.id, user_cache_data, 60 * 60 * 24 * 7)
+
     result = cached_babbles + non_cached_babbles
     result.sort(key=lambda x: x["created"], reverse=True)
     return result
@@ -102,6 +117,16 @@ def get_non_cached_babbles(
 
     babbles = Babble.objects.filter(id__in=non_cached_babbles).order_by("-created")
     serializer = BabbleSerializer(babbles, many=True)
+
+    non_cached_babbles = set(non_cached_babbles)
+    exist_babbles = set()
+
+    for babble in serializer.data:
+        if babble.id in non_cached_babbles:
+            exist_babbles.add(babble.id)
+
+    non_exist_babbles = list(non_cached_babbles - exist_babbles)
+
     non_cached_babbles = serializer.data
 
     for babble in serializer.data:
@@ -116,7 +141,7 @@ def get_non_cached_babbles(
                     babble["is_liked"] = True
                 break
 
-    return non_cached_babbles
+    return non_cached_babbles, non_exist_babbles
 
 
 def get_babbles_from_db(user: User) -> List[Babble]:
@@ -129,11 +154,13 @@ def get_babbles_from_db(user: User) -> List[Babble]:
     for babble in serializer.data:
         babble_cache.set(babble["id"], babble, 60 * 60 * 24 * 7)
 
-    check_rebabbled(serializer, user)
-    check_liked(serializer, user)
+    serialized_babbles = serializer.data
+
+    serialized_babbles = check_rebabbled(serialized_babbles, user)
+    serialized_babbles = check_liked(serialized_babbles, user)
 
     data = []
-    for babble in serializer.data:
+    for babble in serialized_babbles:
         data.append(
             {
                 "id": babble["id"],
@@ -144,4 +171,4 @@ def get_babbles_from_db(user: User) -> List[Babble]:
 
     user_cache.set(user.id, data, 60 * 60 * 24 * 7)
 
-    return serializer.data
+    return serialized_babbles

@@ -1,5 +1,6 @@
 from typing import Optional
 
+from django.core.cache import caches
 from django.db import transaction
 from django.db.models import F
 from django.http import HttpRequest
@@ -8,6 +9,9 @@ from rest_framework.response import Response
 
 from project.models import Babble, Comment
 from project.serializers import CommentSerializer
+
+user_cache = caches["default"]
+babble_cache = caches["second"]
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -21,12 +25,19 @@ class CommentViewSet(viewsets.ModelViewSet):
 
         serializer = CommentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        comment = serializer.save(user=request.user, babble=babble)
 
-        babble.update(comment_count=F("comment_count") + 1)
+        Babble.objects.filter(pk=babble_id).update(comment_count=F("comment_count") + 1)
+
+        babble_cache_data = babble_cache.get(babble_id)
+        if babble_cache_data:
+            babble_cache_data["comment_count"] += 1
+            babble_cache.set(babble_id, babble_cache_data, 60 * 60 * 24 * 7)
+
+        serializer = CommentSerializer(comment)
 
         return Response(
-            {"message": "Comment created successfully"},
+            serializer.data,
             status=status.HTTP_201_CREATED,
         )
 
@@ -43,11 +54,14 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     @transaction.atomic
     def destroy(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
-        comment = Comment.objects.get_or_404(pk=pk)
-        babble = Babble.objects.get_or_404(pk=comment.babble.id)
+        babble_pk = request.data.get("babble")
+        Babble.objects.filter(pk=babble_pk).update(comment_count=F("comment_count") - 1)
+        Comment.objects.filter(pk=pk).delete()
 
-        babble.update(comment_count=F("comment_count") - 1)
-        comment.delete()
+        babble_cache_data = babble_cache.get(babble_pk)
+        if babble_cache_data:
+            babble_cache_data["comment_count"] -= 1
+            babble_cache.set(babble_pk, babble_cache_data, 60 * 60 * 24 * 7)
 
         return Response(
             {"message": "Comment deleted successfully"}, status=status.HTTP_200_OK
