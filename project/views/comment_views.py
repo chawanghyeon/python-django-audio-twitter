@@ -21,8 +21,8 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     @transaction.atomic
     def create(self, request: HttpRequest) -> Response:
-        babble_pk = request.data.get("babble")
-        babble = Babble.objects.get_or_404(pk=babble_pk)
+        babble_id = request.data.get("babble")
+        babble = Babble.objects.get_or_404(id=babble_id)
 
         serializer = CommentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -31,15 +31,15 @@ class CommentViewSet(viewsets.ModelViewSet):
         babble.comment_count += 1
         babble.save()
 
-        update_babble_cache(babble_pk, "comment_count", 1)
+        update_babble_cache(babble_id, "comment_count", 1)
 
         return Response(
             CommentSerializer(comment).data,
             status=status.HTTP_201_CREATED,
         )
 
-    def update(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
-        comment = Comment.objects.get_or_404(pk=pk)
+    def update(self, request: HttpRequest, id: Optional[str] = None) -> Response:
+        comment = Comment.objects.get_or_404(id=id)
 
         serializer = CommentSerializer(comment, data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -49,17 +49,17 @@ class CommentViewSet(viewsets.ModelViewSet):
         return Response(CommentSerializer(comment).data, status=status.HTTP_200_OK)
 
     @transaction.atomic
-    def destroy(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
-        babble_pk = request.data.get("babble")
-        Babble.objects.filter(pk=babble_pk).update(comment_count=F("comment_count") - 1)
-        Comment.objects.filter(pk=pk).delete()
+    def destroy(self, request: HttpRequest, id: Optional[str] = None) -> Response:
+        babble_id = request.data.get("babble")
+        Babble.objects.filter(id=babble_id).update(comment_count=F("comment_count") - 1)
+        Comment.objects.filter(id=id).delete()
 
-        update_babble_cache(babble_pk, "comment_count", -1)
+        update_babble_cache(babble_id, "comment_count", -1)
 
         return Response(status=status.HTTP_200_OK)
 
-    def retrieve(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
-        babble = Babble.objects.get_or_404(pk=pk)
+    def retrieve(self, request: HttpRequest, id: Optional[str] = None) -> Response:
+        babble = Babble.objects.get_or_404(id=id)
         comments = Comment.objects.filter(babble=babble)
 
         return Response(

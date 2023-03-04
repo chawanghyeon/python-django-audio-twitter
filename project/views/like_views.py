@@ -26,37 +26,37 @@ class LikeViewSet(viewsets.ModelViewSet):
 
     @transaction.atomic
     def create(self, request: HttpRequest) -> Response:
-        babble_pk = request.data.get("babble")
+        babble_id = request.data.get("babble")
 
-        if Like.objects.filter(babble__pk=babble_pk, user=request.user).exists():
+        if Like.objects.filter(babble__id=babble_id, user=request.user).exists():
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         serializer = LikeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(babble_pk=babble_pk, user=request.user)
+        serializer.save(babble_id=babble_id, user=request.user)
 
-        Babble.objects.filter(pk=babble_pk).update(like_count=F("like_count") + 1)
+        Babble.objects.filter(id=babble_id).update(like_count=F("like_count") + 1)
 
-        update_user_cache(request.user.pk, babble_pk, "is_liked", True)
-        update_babble_cache(babble_pk, "like_count", 1)
+        update_user_cache(request.user.id, babble_id, "is_liked", True)
+        update_babble_cache(babble_id, "like_count", 1)
 
         return Response(status=status.HTTP_201_CREATED)
 
     @transaction.atomic
-    def destroy(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
-        Babble.objects.filter(pk=pk).update(like_count=F("like_count") - 1)
-        Like.objects.filter(babble__pk=pk, user=request.user).delete()
+    def destroy(self, request: HttpRequest, id: Optional[str] = None) -> Response:
+        Babble.objects.filter(id=id).update(like_count=F("like_count") - 1)
+        Like.objects.filter(babble__id=id, user=request.user).delete()
 
-        pk = int(pk)
+        id = int(id)
 
-        update_user_cache(request.user.pk, pk, "is_liked", False)
-        update_babble_cache(pk, "like_count", -1)
+        update_user_cache(request.user.id, id, "is_liked", False)
+        update_babble_cache(id, "like_count", -1)
 
         return Response(status=status.HTTP_200_OK)
 
-    def list(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
-        if pk:
-            user = User.objects.get_or_404(pk=pk)
+    def list(self, request: HttpRequest, id: Optional[str] = None) -> Response:
+        if id:
+            user = User.objects.get_or_404(id=id)
         else:
             user = request.user
 

@@ -6,7 +6,7 @@ from project.utils import audio_file_path, image_file_path
 
 
 class User(AbstractUser):
-    pk = models.BigAutoField(primary_key=True, unique=True)
+    id = models.BigAutoField(primary_key=True, unique=True)
     birthday = models.DateTimeField(blank=True, null=True)
     image = models.ImageField(upload_to=image_file_path, blank=True, null=True)
     background = models.ImageField(upload_to=image_file_path, blank=True, null=True)
@@ -43,7 +43,7 @@ class Tag(models.Model):
 
 
 class Babble(models.Model):
-    pk = models.BigAutoField(primary_key=True, unique=True)
+    id = models.BigAutoField(primary_key=True, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     audio = models.FileField(upload_to=audio_file_path, blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True, blank=True, null=True)
@@ -59,7 +59,7 @@ class Babble(models.Model):
 
 
 class Comment(models.Model):
-    pk = models.BigAutoField(primary_key=True, unique=True)
+    id = models.BigAutoField(primary_key=True, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     babble = models.ForeignKey(Babble, on_delete=models.CASCADE)
     audio = models.FileField(upload_to=audio_file_path)
@@ -72,7 +72,7 @@ class Comment(models.Model):
 
 
 class Follower(models.Model):
-    pk = models.BigAutoField(primary_key=True, unique=True)
+    id = models.BigAutoField(primary_key=True, unique=True)
     user = models.ForeignKey(User, related_name="self", on_delete=models.CASCADE)
     following = models.ForeignKey(
         User, related_name="following", on_delete=models.CASCADE
@@ -85,22 +85,22 @@ class Follower(models.Model):
 
 
 class Like(models.Model):
-    pk = models.BigAutoField(primary_key=True, unique=True)
+    id = models.BigAutoField(primary_key=True, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     babble = models.ForeignKey(Babble, on_delete=models.CASCADE)
     created = models.DateTimeField(auto_now_add=True)
     objects = DefaultManager()
 
     def __unicode__(self):
-        return self.user.first_name + " likes " + str(self.babble.pk)
+        return self.user.first_name + " likes " + str(self.babble.id)
 
 
 class Rebabble(models.Model):
-    pk = models.BigAutoField(primary_key=True, unique=True)
+    id = models.BigAutoField(primary_key=True, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     babble = models.ForeignKey(Babble, on_delete=models.CASCADE)
     created = models.DateTimeField(auto_now_add=True)
     objects = DefaultManager()
 
     def __unicode__(self):
-        return self.user.first_name + " rebabbles " + str(self.babble.pk)
+        return self.user.first_name + " rebabbles " + str(self.babble.id)

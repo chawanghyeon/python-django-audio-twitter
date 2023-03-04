@@ -20,9 +20,9 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
-    def retrieve(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
-        if pk:
-            user = User.objects.get_or_404(pk=pk)
+    def retrieve(self, request: HttpRequest, id: Optional[str] = None) -> Response:
+        if id:
+            user = User.objects.get_or_404(id=id)
         else:
             user = request.user
 
@@ -49,10 +49,10 @@ class UserViewSet(viewsets.ModelViewSet):
             following=F("following") - 1
         )
 
-        user_cache.delete(user.pk)
+        user_cache.delete(user.id)
 
         for babble in Babble.objects.filter(user=user):
-            babble_cache.delete(babble.pk)
+            babble_cache.delete(babble.id)
 
         user.delete()
 

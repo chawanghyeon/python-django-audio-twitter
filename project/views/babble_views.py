@@ -44,16 +44,16 @@ class BabbleViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
-    def retrieve(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
-        babble_data = babble_cache.get(pk)
+    def retrieve(self, request: HttpRequest, id: Optional[str] = None) -> Response:
+        babble_data = babble_cache.get(id)
 
         if babble_data is None:
-            babble = Babble.objects.get(pk=pk)
+            babble = Babble.objects.get(id=id)
             babble_data = BabbleSerializer(babble).data
-            babble_cache.set(pk, babble_data)
+            babble_cache.set(id, babble_data)
 
-        is_rebabbled = Rebabble.objects.filter(user=request.user, babble=pk).exists()
-        is_liked = Like.objects.filter(user=request.user, babble=pk).exists()
+        is_rebabbled = Rebabble.objects.filter(user=request.user, babble=id).exists()
+        is_liked = Like.objects.filter(user=request.user, babble=id).exists()
 
         babble_data["is_rebabbled"] = is_rebabbled
         babble_data["is_liked"] = is_liked
@@ -61,8 +61,8 @@ class BabbleViewSet(viewsets.ModelViewSet):
         return Response(babble_data, status=status.HTTP_200_OK)
 
     @transaction.atomic
-    def update(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
-        babble = Babble.objects.get_or_404(pk=pk)
+    def update(self, request: HttpRequest, id: Optional[str] = None) -> Response:
+        babble = Babble.objects.get_or_404(id=id)
         serializer = BabbleSerializer(babble, data=request.data)
         serializer.is_valid(raise_exception=True)
         babble = serializer.save()
@@ -74,14 +74,14 @@ class BabbleViewSet(viewsets.ModelViewSet):
         return Response(BabbleSerializer(babble).data, status=status.HTTP_200_OK)
 
     @transaction.atomic
-    def destroy(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
-        Babble.objects.filter(pk=pk).delete()
-        babble_cache.delete(pk)
+    def destroy(self, request: HttpRequest, id: Optional[str] = None) -> Response:
+        Babble.objects.filter(id=id).delete()
+        babble_cache.delete(id)
 
         return Response(status=status.HTTP_200_OK)
 
     def list(self, request: HttpRequest) -> Response:
-        user_cache_data = user_cache.get(request.user.pk)
+        user_cache_data = user_cache.get(request.user.id)
 
         if user_cache_data:
             babbles = get_babbles_from_cache(user_cache_data, request.user)
