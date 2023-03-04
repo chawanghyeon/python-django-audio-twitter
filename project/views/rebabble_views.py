@@ -9,7 +9,12 @@ from rest_framework.response import Response
 
 from project.models import Babble, Rebabble, User
 from project.serializers import BabbleSerializer, RebabbleSerializer
-from project.views.views_utils import check_liked, check_rebabbled
+from project.views.views_utils import (
+    check_liked,
+    check_rebabbled,
+    update_babble_cache,
+    update_user_cache,
+)
 
 user_cache = caches["default"]
 babble_cache = caches["second"]
@@ -25,60 +30,38 @@ class RebabbleViewSet(viewsets.ModelViewSet):
 
         if Rebabble.objects.filter(user=request.user, babble=pk).exists():
             return Response(
-                {"message": "Rebabble already exists"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         babble = Babble.objects.get_or_404(pk=pk)
+        babble.rebabble_count += 1
+        babble.save()
+
         Rebabble.objects.create(user=request.user, babble=babble)
-        babble.rebabble_count = F("rebabble_count") + 1
-        babble.save(update_fields=["rebabble_count"])
 
-        user_cache_data = user_cache.get(request.user.id)
-        if user_cache_data:
-            for data in user_cache_data:
-                if data["id"] == pk:
-                    data["is_rebabbled"] = True
-                    break
-            user_cache.set(request.user.id, user_cache_data, 60 * 60 * 24 * 7)
-
-        babble_cache_data = babble_cache.get(pk)
-        if babble_cache_data:
-            babble_cache_data["rebabble_count"] += 1
-            babble_cache.set(pk, babble_cache_data, 60 * 60 * 24 * 7)
+        update_user_cache(request.user.pk, pk, "is_rebabbled", True)
+        update_babble_cache(pk, "rebabble_count", 1)
 
         return Response(
-            {"message": "Rebabble created successfully"},
             status=status.HTTP_201_CREATED,
         )
 
     @transaction.atomic
     def destroy(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
         pk = int(pk)
-        Rebabble.objects.get(user=request.user, babble=pk).delete()
+        Rebabble.objects.filter(user=request.user, babble=pk).delete()
         Babble.objects.filter(pk=pk).update(rebabble_count=F("rebabble_count") - 1)
 
-        user_cache_data = user_cache.get(request.user.id)
-        if user_cache_data:
-            for data in user_cache_data:
-                if data["id"] == pk:
-                    data["is_rebabbled"] = False
-                    break
-            user_cache.set(request.user.id, user_cache_data, 60 * 60 * 24 * 7)
-
-        babble_cache_data = babble_cache.get(pk)
-        if babble_cache_data:
-            babble_cache_data["rebabble_count"] -= 1
-            babble_cache.set(pk, babble_cache_data, 60 * 60 * 24 * 7)
+        update_user_cache(request.user.pk, pk, "is_rebabbled", False)
+        update_babble_cache(pk, "rebabble_count", -1)
 
         return Response(
-            {"message": "Rebabble deleted successfully"},
             status=status.HTTP_200_OK,
         )
 
     def list(self, request: HttpRequest) -> Response:
         pk = request.data.get("user")
-        if pk and pk != request.user.id:
+        if pk and pk != request.user.pk:
             user = User.objects.get_or_404(pk=pk)
         else:
             user = request.user
@@ -86,7 +69,8 @@ class RebabbleViewSet(viewsets.ModelViewSet):
         babbles = Babble.objects.filter(rebabble__user=user).order_by("-created")
         serializer = BabbleSerializer(babbles, many=True)
 
-        serialized_data = check_rebabbled(serializer.data, user)
+        serialized_data = serializer.data
+        serialized_data = check_rebabbled(serialized_data, user)
         serialized_data = check_liked(serialized_data, user)
 
         return Response(serialized_data, status=status.HTTP_200_OK)

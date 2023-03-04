@@ -20,36 +20,31 @@ class FollowerViewSet(viewsets.ModelViewSet):
 
     @transaction.atomic
     def create(self, request: HttpRequest) -> Response:
-        serializer = FollowerSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
         following = User.objects.get_or_404(pk=request.data.get("following"))
 
-        request.user.update(following=F("following") + 1)
-        following.update(followers=F("followers") + 1)
+        serializer = FollowerSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=request.user, following=following)
 
-        user_cache.delete(request.user.id)
+        User.objects.filter(pk=request.user.pk).update(following=F("following") + 1)
+        User.objects.filter(pk=following.pk).update(followers=F("followers") + 1)
+
+        user_cache.delete(request.user.pk)
 
         return Response(
-            {"message": "Follower created successfully"},
             status=status.HTTP_201_CREATED,
         )
 
     @transaction.atomic
     def destroy(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
-        following = User.objects.get_or_404(pk=pk)
-        follower = Follower.objects.get_or_404(User=request.user, following=following)
+        Follower.objects.filter(user=request.user, following=pk).delete()
 
-        request.user.update(following=F("following") - 1)
-        following.update(followers=F("followers") - 1)
-        follower.delete()
+        User.objects.filter(pk=request.user.pk).update(following=F("following") - 1)
+        User.objects.filter(pk=pk).update(followers=F("followers") - 1)
 
-        user_cache.delete(request.user.id)
+        user_cache.delete(request.user.pk)
 
-        return Response(
-            {"message": "Follower deleted successfully"}, status=status.HTTP_200_OK
-        )
+        return Response(status=status.HTTP_200_OK)
 
     @action(detail=False, methods=["get"], url_path="followings")
     def get_followings(self, request: HttpRequest) -> Response:

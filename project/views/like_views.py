@@ -9,7 +9,12 @@ from rest_framework.response import Response
 
 from project.models import Babble, Like, User
 from project.serializers import BabbleSerializer, LikeSerializer
-from project.views.views_utils import check_liked, check_rebabbled
+from project.views.views_utils import (
+    check_liked,
+    check_rebabbled,
+    update_babble_cache,
+    update_user_cache,
+)
 
 user_cache = caches["default"]
 babble_cache = caches["second"]
@@ -21,38 +26,21 @@ class LikeViewSet(viewsets.ModelViewSet):
 
     @transaction.atomic
     def create(self, request: HttpRequest) -> Response:
-        babble_id = request.data.get("babble")
+        babble_pk = request.data.get("babble")
 
-        if Like.objects.filter(babble__pk=babble_id, user=request.user).exists():
-            return Response(
-                {"message": "Like already exists"}, status=status.HTTP_400_BAD_REQUEST
-            )
+        if Like.objects.filter(babble__pk=babble_pk, user=request.user).exists():
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
         serializer = LikeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(babble_id=babble_id, user=request.user)
+        serializer.save(babble_pk=babble_pk, user=request.user)
 
-        Babble.objects.filter(pk=babble_id).update(like_count=F("like_count") + 1)
+        Babble.objects.filter(pk=babble_pk).update(like_count=F("like_count") + 1)
 
-        user_cache_data = user_cache.get(request.user.id)
+        update_user_cache(request.user.pk, babble_pk, "is_liked", True)
+        update_babble_cache(babble_pk, "like_count", 1)
 
-        if user_cache_data:
-            for data in user_cache_data:
-                if data["id"] == babble_id:
-                    data["is_liked"] = True
-                    break
-
-            user_cache.set(request.user.id, user_cache_data)
-
-        babble_cache_data = babble_cache.get(babble_id)
-
-        if babble_cache_data:
-            babble_cache_data["like_count"] += 1
-            babble_cache.set(babble_id, babble_cache_data)
-
-        return Response(
-            {"message": "Like created successfully"}, status=status.HTTP_201_CREATED
-        )
+        return Response(status=status.HTTP_201_CREATED)
 
     @transaction.atomic
     def destroy(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
@@ -60,23 +48,11 @@ class LikeViewSet(viewsets.ModelViewSet):
         Like.objects.filter(babble__pk=pk, user=request.user).delete()
 
         pk = int(pk)
-        user_cache_data = user_cache.get(request.user.id)
-        if user_cache_data:
-            for data in user_cache_data:
-                if data["id"] == pk:
-                    data["is_liked"] = False
-                    break
 
-            user_cache.set(request.user.id, user_cache_data)
+        update_user_cache(request.user.pk, pk, "is_liked", False)
+        update_babble_cache(pk, "like_count", -1)
 
-        babble_cache_data = babble_cache.get(pk)
-        if babble_cache_data:
-            babble_cache_data["like_count"] -= 1
-            babble_cache.set(pk, babble_cache_data)
-
-        return Response(
-            {"message": "Like deleted successfully"}, status=status.HTTP_200_OK
-        )
+        return Response(status=status.HTTP_200_OK)
 
     def list(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
         if pk:
@@ -86,7 +62,9 @@ class LikeViewSet(viewsets.ModelViewSet):
 
         babbles = Babble.objects.filter(like__user=user).order_by("-created")
         serializer = BabbleSerializer(babbles, many=True)
-        serialized_data = check_rebabbled(serializer.data, user)
+
+        serialized_data = serializer.data
+        serialized_data = check_rebabbled(serialized_data, user)
         serialized_data = check_liked(serialized_data, user)
 
         return Response(serialized_data, status=status.HTTP_200_OK)

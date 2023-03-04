@@ -18,14 +18,10 @@ class AuthViewSet(viewsets.GenericViewSet):
     @action(detail=False, methods=["post"], url_name="signup")
     def signup(self, request: HttpRequest) -> Response:
         serializer = UserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(password=make_password(request.data.get("password")))
 
-        if serializer.is_valid():
-            serializer.save(password=make_password(request.data.get("password")))
-            return Response(
-                {"message": "User created successfully"}, status=status.HTTP_201_CREATED
-            )
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=["post"], url_name="signin")
     def signin(self, request: HttpRequest) -> Response:

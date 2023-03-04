@@ -26,28 +26,14 @@ class UserViewSet(viewsets.ModelViewSet):
         else:
             user = request.user
 
-        serializer: UserSerializer = UserSerializer(user)
+        return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def partial_update(
-        self, request: HttpRequest, pk: Optional[str] = None
-    ) -> Response:
-        user = User.objects.get_or_404(pk=pk)
-
-        if user != request.user:
-            return Response(
-                {"error": "You are not allowed to do this"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        serializer = UserSerializer(user, data=request.data, partial=True)
+    def partial_update(self, request: HttpRequest) -> Response:
+        serializer = UserSerializer(request.user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        return Response(
-            {"message": "User updated successfully"}, status=status.HTTP_200_OK
-        )
+        return Response(status=status.HTTP_200_OK)
 
     @transaction.atomic
     def destroy(self, request: HttpRequest) -> Response:
@@ -56,25 +42,21 @@ class UserViewSet(viewsets.ModelViewSet):
         )
 
         if user is None:
-            return Response(
-                {"error": "Wrong password"}, status=status.HTTP_401_UNAUTHORIZED
-            )
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
 
         User.objects.filter(follower__user=user).update(followers=F("followers") - 1)
         User.objects.filter(follower__following=user).update(
             following=F("following") - 1
         )
 
-        user_cache.delete(user.id)
+        user_cache.delete(user.pk)
 
         for babble in Babble.objects.filter(user=user):
-            babble_cache.delete(babble.id)
+            babble_cache.delete(babble.pk)
 
         user.delete()
 
-        return Response(
-            {"message": "User deleted successfully"}, status=status.HTTP_200_OK
-        )
+        return Response(status=status.HTTP_200_OK)
 
     @action(detail=True, methods=["put"], url_name="password", url_path="password")
     def update_password(self, request: HttpRequest) -> Response:
@@ -83,13 +65,9 @@ class UserViewSet(viewsets.ModelViewSet):
         new_password = request.data.get("new_password")
 
         if not user.check_password(old_password):
-            return Response(
-                {"error": "Wrong password"}, status=status.HTTP_401_UNAUTHORIZED
-            )
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
 
         user.set_password(new_password)
         user.save()
 
-        return Response(
-            {"message": "Password updated successfully"}, status=status.HTTP_200_OK
-        )
+        return Response(status=status.HTTP_200_OK)

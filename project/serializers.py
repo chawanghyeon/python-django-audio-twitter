@@ -11,7 +11,7 @@ from project.models import *
 class UserInSerializer(ModelSerializer):
     class Meta:
         fields = (
-            "id",
+            "pk",
             "nickname",
             "first_name",
             "last_name",

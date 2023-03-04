@@ -13,6 +13,7 @@ from project.views.views_utils import (
     get_babbles_from_cache,
     get_babbles_from_db,
     save_keywords,
+    set_caches,
     set_follower_cache,
 )
 
@@ -31,24 +32,12 @@ class BabbleViewSet(viewsets.ModelViewSet):
     def create(self, request: HttpRequest) -> Response:
         serializer = BabbleSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
         babble = serializer.save(user=request.user)
         babble = save_keywords(babble)
 
-        set_follower_cache(babble, request.user)
-
-        user_cache_data = user_cache.get(request.user.id)
-        if user_cache_data:
-            data_for_cache = {
-                "id": babble.id,
-                "is_rebabbled": False,
-                "is_liked": False,
-            }
-            user_cache_data.append(data_for_cache)
-            user_cache.set(request.user.id, user_cache_data, 60 * 60 * 24 * 7)
-
         serializer = BabbleSerializer(babble)
-        babble_cache.set(babble.id, serializer.data, 60 * 60 * 24 * 7)
+
+        set_caches(babble, request.user, serializer.data)
 
         return Response(
             serializer.data,
@@ -56,55 +45,43 @@ class BabbleViewSet(viewsets.ModelViewSet):
         )
 
     def retrieve(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
-        babble_cache_data = babble_cache.get(pk)
+        babble_data = babble_cache.get(pk)
 
-        if babble_cache_data:
-            if Rebabble.objects.filter(user=request.user, babble=pk).exists():
-                babble_cache_data["is_rebabbled"] = True
-            if Like.objects.filter(user=request.user, babble=pk).exists():
-                babble_cache_data["is_liked"] = True
-            return Response(babble_cache_data, status=status.HTTP_200_OK)
+        if babble_data is None:
+            babble = Babble.objects.get(pk=pk)
+            babble_data = BabbleSerializer(babble).data
+            babble_cache.set(pk, babble_data)
 
-        babble = Babble.objects.get(pk=pk)
-        serializer = BabbleSerializer(babble)
-        serialized_data = serializer.data
-        babble_cache.set(pk, serialized_data, 60 * 60 * 24 * 7)
+        is_rebabbled = Rebabble.objects.filter(user=request.user, babble=pk).exists()
+        is_liked = Like.objects.filter(user=request.user, babble=pk).exists()
 
-        if Rebabble.objects.filter(user=request.user, babble=babble).exists():
-            serialized_data["is_rebabbled"] = True
+        babble_data["is_rebabbled"] = is_rebabbled
+        babble_data["is_liked"] = is_liked
 
-        if Like.objects.filter(user=request.user, babble=babble).exists():
-            serialized_data["is_liked"] = True
-
-        return Response(serialized_data, status=status.HTTP_200_OK)
+        return Response(babble_data, status=status.HTTP_200_OK)
 
     @transaction.atomic
     def update(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
         babble = Babble.objects.get_or_404(pk=pk)
-
         serializer = BabbleSerializer(babble, data=request.data)
         serializer.is_valid(raise_exception=True)
-
         babble = serializer.save()
+
         babble = save_keywords(babble)
 
         set_follower_cache(babble, request.user)
 
-        serializer = BabbleSerializer(babble)
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(BabbleSerializer(babble).data, status=status.HTTP_200_OK)
 
     @transaction.atomic
     def destroy(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
-        Babble.objects.get(pk=pk).delete()
+        Babble.objects.filter(pk=pk).delete()
         babble_cache.delete(pk)
 
-        return Response(
-            {"message": "Babble deleted successfully"}, status=status.HTTP_200_OK
-        )
+        return Response(status=status.HTTP_200_OK)
 
     def list(self, request: HttpRequest) -> Response:
-        user_cache_data = user_cache.get(request.user.id)
+        user_cache_data = user_cache.get(request.user.pk)
 
         if user_cache_data:
             babbles = get_babbles_from_cache(user_cache_data, request.user)

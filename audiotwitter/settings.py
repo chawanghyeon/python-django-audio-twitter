@@ -177,6 +177,7 @@ CACHES = {
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         },
+        "CAHCE_TIMEOUT": 60 * 60 * 24 * 7,
     },
     "second": {
         "BACKEND": "django_redis.cache.RedisCache",
@@ -184,6 +185,7 @@ CACHES = {
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         },
+        "CAHCE_TIMEOUT": 60 * 60 * 24 * 7,
     },
 }
 
