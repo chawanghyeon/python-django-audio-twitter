@@ -38,8 +38,8 @@ class CommentViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
-    def update(self, request: HttpRequest, id: Optional[str] = None) -> Response:
-        comment = Comment.objects.get_or_404(id=id)
+    def update(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
+        comment = Comment.objects.get_or_404(id=pk)
 
         serializer = CommentSerializer(comment, data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -49,17 +49,17 @@ class CommentViewSet(viewsets.ModelViewSet):
         return Response(CommentSerializer(comment).data, status=status.HTTP_200_OK)
 
     @transaction.atomic
-    def destroy(self, request: HttpRequest, id: Optional[str] = None) -> Response:
+    def destroy(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
         babble_id = request.data.get("babble")
         Babble.objects.filter(id=babble_id).update(comment_count=F("comment_count") - 1)
-        Comment.objects.filter(id=id).delete()
+        Comment.objects.filter(id=pk).delete()
 
         update_babble_cache(babble_id, "comment_count", -1)
 
         return Response(status=status.HTTP_200_OK)
 
-    def retrieve(self, request: HttpRequest, id: Optional[str] = None) -> Response:
-        babble = Babble.objects.get_or_404(id=id)
+    def retrieve(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
+        babble = Babble.objects.get_or_404(id=pk)
         comments = Comment.objects.filter(babble=babble)
 
         return Response(

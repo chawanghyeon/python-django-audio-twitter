@@ -43,20 +43,20 @@ class LikeViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_201_CREATED)
 
     @transaction.atomic
-    def destroy(self, request: HttpRequest, id: Optional[str] = None) -> Response:
-        Babble.objects.filter(id=id).update(like_count=F("like_count") - 1)
-        Like.objects.filter(babble__id=id, user=request.user).delete()
+    def destroy(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
+        Babble.objects.filter(id=pk).update(like_count=F("like_count") - 1)
+        Like.objects.filter(babble__id=pk, user=request.user).delete()
 
-        id = int(id)
+        pk = int(pk)
 
-        update_user_cache(request.user.id, id, "is_liked", False)
-        update_babble_cache(id, "like_count", -1)
+        update_user_cache(request.user.id, pk, "is_liked", False)
+        update_babble_cache(pk, "like_count", -1)
 
         return Response(status=status.HTTP_200_OK)
 
-    def list(self, request: HttpRequest, id: Optional[str] = None) -> Response:
-        if id:
-            user = User.objects.get_or_404(id=id)
+    def list(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
+        if pk:
+            user = User.objects.get_or_404(id=pk)
         else:
             user = request.user
 

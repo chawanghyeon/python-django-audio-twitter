@@ -47,13 +47,13 @@ class RebabbleViewSet(viewsets.ModelViewSet):
         )
 
     @transaction.atomic
-    def destroy(self, request: HttpRequest, id: Optional[str] = None) -> Response:
-        id = int(id)
-        Rebabble.objects.filter(user=request.user, babble=id).delete()
-        Babble.objects.filter(id=id).update(rebabble_count=F("rebabble_count") - 1)
+    def destroy(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
+        pk = int(pk)
+        Rebabble.objects.filter(user=request.user, babble=pk).delete()
+        Babble.objects.filter(id=pk).update(rebabble_count=F("rebabble_count") - 1)
 
-        update_user_cache(request.user.id, id, "is_rebabbled", False)
-        update_babble_cache(id, "rebabble_count", -1)
+        update_user_cache(request.user.id, pk, "is_rebabbled", False)
+        update_babble_cache(pk, "rebabble_count", -1)
 
         return Response(
             status=status.HTTP_200_OK,

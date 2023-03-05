@@ -36,11 +36,11 @@ class FollowerViewSet(viewsets.ModelViewSet):
         )
 
     @transaction.atomic
-    def destroy(self, request: HttpRequest, id: Optional[str] = None) -> Response:
-        Follower.objects.filter(user=request.user, following=id).delete()
+    def destroy(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
+        Follower.objects.filter(user=request.user, following=pk).delete()
 
         User.objects.filter(id=request.user.id).update(following=F("following") - 1)
-        User.objects.filter(id=id).update(followers=F("followers") - 1)
+        User.objects.filter(id=pk).update(followers=F("followers") - 1)
 
         user_cache.delete(request.user.id)
 

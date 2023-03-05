@@ -20,9 +20,9 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
-    def retrieve(self, request: HttpRequest, id: Optional[str] = None) -> Response:
-        if id:
-            user = User.objects.get_or_404(id=id)
+    def retrieve(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
+        if pk:
+            user = User.objects.get_or_404(id=pk)
         else:
             user = request.user
 

@@ -57,8 +57,8 @@ def save_keywords(babble: Babble) -> Babble:
 
     if new_tags:
         new_tag_objs = [Tag(text=tag) for tag in new_tags]
-        Tag.objects.bulk_create(new_tag_objs)
-        tag_objs = tag_objs | set(new_tag_objs)
+        new_tag_objs = Tag.objects.bulk_create(new_tag_objs)
+        tag_objs = set(tag_objs) | set(new_tag_objs)
 
     babble.tags.set(tag_objs)
     babble.save()
