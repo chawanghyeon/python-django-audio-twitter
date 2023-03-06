@@ -5,6 +5,7 @@ from django.db import transaction
 from django.db.models.manager import BaseManager
 from django.http import HttpRequest
 from rest_framework import status, viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from project.models import Babble, Like, Rebabble
@@ -91,3 +92,9 @@ class BabbleViewSet(viewsets.ModelViewSet):
             babbles = get_babbles_from_db(request.user)
 
         return Response(babbles, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=["get"])
+    def explore(self, request: HttpRequest) -> Response:
+        babbles = Babble.objects.exclude(user=request.user).order_by("-created")
+        serializer = BabbleSerializer(babbles, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
