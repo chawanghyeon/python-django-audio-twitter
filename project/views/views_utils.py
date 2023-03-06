@@ -1,10 +1,10 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from django.core.cache import caches
 from django.db.models import Q
 from django.http import HttpRequest
 
-from project.models import Babble, Like, Rebabble, Tag, User
+from project.models import Babble, Follower, Like, Rebabble, Tag, User
 from project.serializers import BabbleSerializer
 from project.stt import STT
 
@@ -199,8 +199,11 @@ def get_babbles_from_db(user: User) -> List[Babble]:
     return serialized_data
 
 
-def get_user(request: HttpRequest) -> User:
+def get_user(request: HttpRequest, pk: Optional[str] = None) -> User:
     id = request.query_params.get("user", None)
+
+    if id is None and pk is not None:
+        id = pk
 
     if id is None:
         user = request.user
@@ -208,3 +211,15 @@ def get_user(request: HttpRequest) -> User:
         user = User.objects.get(id=id)
 
     return user
+
+
+def check_is_following(user: User, follower: User, serialized_data: Dict) -> Dict:
+    if user == follower:
+        return serialized_data
+
+    if Follower.objects.filter(user=user, following=follower).exists():
+        serialized_data["is_following"] = True
+    else:
+        serialized_data["is_following"] = False
+
+    return serialized_data

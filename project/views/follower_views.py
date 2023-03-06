@@ -26,8 +26,12 @@ class FollowerViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save(user=request.user, following=following)
 
-        User.objects.filter(id=request.user.id).update(following=F("following") + 1)
-        User.objects.filter(id=following.id).update(followers=F("followers") + 1)
+        User.objects.filter(id=request.user.id).update(
+            following_count=F("following_count") + 1
+        )
+        User.objects.filter(id=following.id).update(
+            follower_count=F("follower_count") + 1
+        )
 
         user_cache.delete(request.user.id)
 
@@ -39,8 +43,10 @@ class FollowerViewSet(viewsets.ModelViewSet):
     def destroy(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
         Follower.objects.filter(user=request.user, following=pk).delete()
 
-        User.objects.filter(id=request.user.id).update(following=F("following") - 1)
-        User.objects.filter(id=pk).update(followers=F("followers") - 1)
+        User.objects.filter(id=pk).update(follower_count=F("follower_count") - 1)
+        User.objects.filter(id=request.user.id).update(
+            following_count=F("following_count") - 1
+        )
 
         user_cache.delete(request.user.id)
 

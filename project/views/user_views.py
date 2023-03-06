@@ -11,6 +11,7 @@ from rest_framework.response import Response
 
 from project.models import Babble, User
 from project.serializers import UserSerializer
+from project.views.views_utils import check_is_following, get_user
 
 user_cache = caches["default"]
 babble_cache = caches["second"]
@@ -21,12 +22,12 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
 
     def retrieve(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
-        if pk:
-            user = User.objects.get_or_404(id=pk)
-        else:
-            user = request.user
+        user = get_user(request, pk)
 
-        return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
+        serializer = UserSerializer(user)
+        serialized_data = check_is_following(request.user, user, serializer.data)
+
+        return Response(serialized_data, status=status.HTTP_200_OK)
 
     def partial_update(self, request: HttpRequest) -> Response:
         serializer = UserSerializer(request.user, data=request.data, partial=True)
@@ -44,9 +45,11 @@ class UserViewSet(viewsets.ModelViewSet):
         if user is None:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
 
-        User.objects.filter(follower__user=user).update(followers=F("followers") - 1)
+        User.objects.filter(follower__user=user).update(
+            follower_count=F("follower_count") - 1
+        )
         User.objects.filter(follower__following=user).update(
-            following=F("following") - 1
+            following_count=F("following_count") - 1
         )
 
         user_cache.delete(user.id)
