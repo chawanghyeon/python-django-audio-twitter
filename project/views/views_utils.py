@@ -178,16 +178,20 @@ def get_babbles_from_db(user: User) -> List[Babble]:
         Q(user__in=user.self.all().values_list("following", flat=True)) | Q(user=user)
     ).order_by("-created")[:20]
 
+    if babbles.count() < 20:
+        babbles = babbles | Babble.objects.all().order_by("-created")[:20]
+
     serializer = BabbleSerializer(babbles, many=True)
-    serialized_babbles = serializer.data
+    serialized_data = serializer.data
+    serialized_data.sort(key=lambda x: x["created"], reverse=True)
 
-    set_babbles_cache(serialized_babbles)
+    set_babbles_cache(serialized_data)
 
-    serialized_babbles = check_rebabbled(serialized_babbles, user)
-    serialized_babbles = check_liked(serialized_babbles, user)
+    serialized_data = check_rebabbled(serialized_data, user)
+    serialized_data = check_liked(serialized_data, user)
 
     data = {}
-    for babble in serialized_babbles:
+    for babble in serialized_data:
         data[babble["id"]] = {
             "is_rebabbled": babble["is_rebabbled"],
             "is_liked": babble["is_liked"],
@@ -195,4 +199,4 @@ def get_babbles_from_db(user: User) -> List[Babble]:
 
     user_cache.set(user.id, data)
 
-    return serialized_babbles
+    return serialized_data
