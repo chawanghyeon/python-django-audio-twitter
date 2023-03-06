@@ -2,6 +2,7 @@ from typing import Dict, List
 
 from django.core.cache import caches
 from django.db.models import Q
+from django.http import HttpRequest
 
 from project.models import Babble, Like, Rebabble, Tag, User
 from project.serializers import BabbleSerializer
@@ -196,3 +197,14 @@ def get_babbles_from_db(user: User) -> List[Babble]:
     user_cache.set(user.id, data)
 
     return serialized_data
+
+
+def get_user(request: HttpRequest) -> User:
+    id = request.query_params.get("user", None)
+
+    if id is None:
+        user = request.user
+    else:
+        user = User.objects.get(id=id)
+
+    return user

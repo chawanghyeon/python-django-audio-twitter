@@ -11,8 +11,11 @@ from rest_framework.response import Response
 from project.models import Babble, Like, Rebabble
 from project.serializers import BabbleSerializer
 from project.views.views_utils import (
+    check_liked,
+    check_rebabbled,
     get_babbles_from_cache,
     get_babbles_from_db,
+    get_user,
     save_keywords,
     set_caches,
     set_follower_cache,
@@ -84,17 +87,27 @@ class BabbleViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_200_OK)
 
     def list(self, request: HttpRequest) -> Response:
-        user_cache_data = user_cache.get(request.user.id)
+        user = get_user(request)
+        user_cache_data = user_cache.get(user.id)
 
         if user_cache_data:
-            babbles = get_babbles_from_cache(user_cache_data, request.user)
+            serialized_data = get_babbles_from_cache(user_cache_data, user)
         else:
-            babbles = get_babbles_from_db(request.user)
+            serialized_data = get_babbles_from_db(user)
 
-        return Response(babbles, status=status.HTTP_200_OK)
+        if user != request.user:
+            serialized_data = check_rebabbled(serialized_data, request.user)
+            serialized_data = check_liked(serialized_data, request.user)
+
+        return Response(serialized_data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=["get"])
     def explore(self, request: HttpRequest) -> Response:
         babbles = Babble.objects.exclude(user=request.user).order_by("-created")
         serializer = BabbleSerializer(babbles, many=True)
+
+        serialized_data = serializer.data
+        serialized_data = check_rebabbled(serialized_data, request.user)
+        serialized_data = check_liked(serialized_data, request.user)
+
         return Response(serializer.data, status=status.HTTP_200_OK)
