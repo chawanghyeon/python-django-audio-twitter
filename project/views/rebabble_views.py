@@ -66,8 +66,7 @@ class RebabbleViewSet(viewsets.ModelViewSet):
         babbles = Babble.objects.filter(rebabble__user=user).order_by("-created")
         serializer = BabbleSerializer(babbles, many=True)
 
-        serialized_data = serializer.data
-        serialized_data = check_rebabbled(serialized_data, request.user)
+        serialized_data = check_rebabbled(serializer.data, request.user)
         serialized_data = check_liked(serialized_data, request.user)
 
         return Response(serialized_data, status=status.HTTP_200_OK)

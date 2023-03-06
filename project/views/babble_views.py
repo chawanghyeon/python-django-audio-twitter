@@ -70,8 +70,8 @@ class BabbleViewSet(viewsets.ModelViewSet):
         babble = Babble.objects.get_or_404(id=pk)
         serializer = BabbleSerializer(babble, data=request.data)
         serializer.is_valid(raise_exception=True)
-        babble = serializer.save()
 
+        babble = serializer.save()
         babble = save_keywords(babble)
 
         set_follower_cache(babble, request.user)
@@ -106,8 +106,7 @@ class BabbleViewSet(viewsets.ModelViewSet):
         babbles = Babble.objects.exclude(user=request.user).order_by("-created")
         serializer = BabbleSerializer(babbles, many=True)
 
-        serialized_data = serializer.data
-        serialized_data = check_rebabbled(serialized_data, request.user)
+        serialized_data = check_rebabbled(serializer.data, request.user)
         serialized_data = check_liked(serialized_data, request.user)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
