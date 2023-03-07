@@ -5,7 +5,6 @@ from django.db import transaction
 from django.db.models import F
 from django.http import HttpRequest
 from rest_framework import status, viewsets
-from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from project.models import Follower, User
@@ -51,17 +50,3 @@ class FollowerViewSet(viewsets.ModelViewSet):
         user_cache.delete(request.user.id)
 
         return Response(status=status.HTTP_200_OK)
-
-    @action(detail=False, methods=["get"], url_path="followings")
-    def get_followings(self, request: HttpRequest) -> Response:
-        followings = self.queryset.filter(follower=request.user)
-        serializer = FollowerSerializer(followings, many=True)
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    @action(detail=False, methods=["get"], url_path="followers")
-    def get_followers(self, request: HttpRequest) -> Response:
-        followers = self.queryset.filter(following=request.user)
-        serializer = FollowerSerializer(followers, many=True)
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
