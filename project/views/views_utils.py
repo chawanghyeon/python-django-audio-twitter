@@ -107,9 +107,12 @@ def set_caches(babble: Babble, user: User, serialized_data) -> None:
     babble_cache.set(babble.id, serialized_data)
 
 
-def get_babbles_from_cache(user_cache_data: Dict, user: User) -> List[Dict]:
+def get_babbles_from_cache(user_cache_data: Dict, user: User, next: int) -> List[Dict]:
     cached_babbles = []
     non_cached_babbles = []
+
+    start = next if next else 0
+    user_cache_data = dict(list(user_cache_data.items())[start : start + 5])
 
     for id, value in user_cache_data.items():
         babble = babble_cache.get(id)
@@ -174,10 +177,17 @@ def get_non_cached_babbles(non_cached_babbles: List[int], user: User) -> List[di
     return serialized_data
 
 
-def get_babbles_from_db(user: User) -> List[Babble]:
+def get_babbles_from_db(user: User, next: int) -> List[Babble]:
+    start = 0
+    end = 20
+
+    if next >= 20:
+        start = next
+        end = start + 5
+
     babbles = Babble.objects.filter(
         Q(user__in=user.self.all().values_list("following", flat=True)) | Q(user=user)
-    ).order_by("-created")[:20]
+    ).order_by("-created")[start:end]
 
     serializer = BabbleSerializer(babbles, many=True)
     serialized_data = serializer.data

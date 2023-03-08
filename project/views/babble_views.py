@@ -6,6 +6,7 @@ from django.db.models.manager import BaseManager
 from django.http import HttpRequest
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.pagination import CursorPagination
 from rest_framework.response import Response
 
 from project.models import Babble, Like, Rebabble
@@ -89,24 +90,57 @@ class BabbleViewSet(viewsets.ModelViewSet):
     def list(self, request: HttpRequest) -> Response:
         user = get_user(request)
         user_cache_data = user_cache.get(user.id)
+        next = request.query_params.get("next") or 0
+        next = int(next)
 
         if user_cache_data:
-            serialized_data = get_babbles_from_cache(user_cache_data, user)
+            serialized_data = get_babbles_from_cache(user_cache_data, user, next)
         else:
-            serialized_data = get_babbles_from_db(user)
+            serialized_data = get_babbles_from_db(user, next)
 
         if user != request.user:
             serialized_data = check_rebabbled(serialized_data, request.user)
             serialized_data = check_liked(serialized_data, request.user)
 
-        return Response(serialized_data, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "results": serialized_data,
+                "next": next + 5,
+            },
+            status=status.HTTP_200_OK,
+        )
 
     @action(detail=False, methods=["get"])
     def explore(self, request: HttpRequest) -> Response:
-        babbles = Babble.objects.exclude(user=request.user).order_by("-created")
-        serializer = BabbleSerializer(babbles, many=True)
+        pagenator = CursorPagination()
+        babbles = Babble.objects.exclude(user=request.user)
+        babbles = pagenator.paginate_queryset(babbles, request)
 
+<<<<<<< HEAD
+=======
+        if babbles is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        serializer = BabbleSerializer(babbles, many=True)
+>>>>>>> bf6b529 (Add paginate logic)
         serialized_data = check_rebabbled(serializer.data, request.user)
         serialized_data = check_liked(serialized_data, request.user)
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return pagenator.get_paginated_response(serialized_data)
+
+    @action(detail=True, methods=["get"])
+    def profile(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
+        user = get_user(request, pk)
+        pagenator = CursorPagination()
+
+        babbles = Babble.objects.filter(user=user)
+        babbles = pagenator.paginate_queryset(babbles, request)
+
+        if babbles is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        serializer = BabbleSerializer(babbles, many=True)
+        serialized_data = check_rebabbled(serializer.data, request.user)
+        serialized_data = check_liked(serialized_data, request.user)
+
+        return pagenator.get_paginated_response(serialized_data)

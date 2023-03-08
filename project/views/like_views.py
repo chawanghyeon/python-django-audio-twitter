@@ -5,6 +5,7 @@ from django.db import transaction
 from django.db.models import F
 from django.http import HttpRequest
 from rest_framework import status, viewsets
+from rest_framework.pagination import CursorPagination
 from rest_framework.response import Response
 
 from project.models import Babble, Like
@@ -55,13 +56,22 @@ class LikeViewSet(viewsets.ModelViewSet):
 
         return Response(status=status.HTTP_200_OK)
 
-    def list(self, request: HttpRequest) -> Response:
-        user = get_user(request)
+    def retrieve(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
+        user = get_user(request, pk)
+        pagenator = CursorPagination()
 
-        babbles = Babble.objects.filter(like__user=user).order_by("-created")
+        babbles = Babble.objects.filter(like__user=user)
+        babbles = pagenator.paginate_queryset(babbles, request)
+
+        if babbles is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
         serializer = BabbleSerializer(babbles, many=True)
+<<<<<<< HEAD
 
+=======
+>>>>>>> bf6b529 (Add paginate logic)
         serialized_data = check_rebabbled(serializer.data, request.user)
         serialized_data = check_liked(serialized_data, request.user)
 
-        return Response(serialized_data, status=status.HTTP_200_OK)
+        return pagenator.get_paginated_response(serialized_data)

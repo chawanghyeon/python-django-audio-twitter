@@ -5,6 +5,7 @@ from django.db import transaction
 from django.db.models import F
 from django.http import HttpRequest
 from rest_framework import status, viewsets
+from rest_framework.pagination import CursorPagination
 from rest_framework.response import Response
 
 from project.models import Babble, Comment
@@ -59,9 +60,14 @@ class CommentViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_200_OK)
 
     def retrieve(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
+        pagenator = CursorPagination()
         babble = Babble.objects.get_or_404(id=pk)
         comments = Comment.objects.filter(babble=babble)
+        comments = pagenator.paginate_queryset(comments, request)
 
-        return Response(
-            CommentSerializer(comments, many=True).data, status=status.HTTP_200_OK
-        )
+        if comments is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        serializer = CommentSerializer(comments, many=True)
+
+        return pagenator.get_paginated_response(serializer.data)
