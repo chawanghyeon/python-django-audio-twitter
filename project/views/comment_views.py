@@ -61,6 +61,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def retrieve(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
         pagenator = CursorPagination()
+        pagenator.page_size = 7
         babble = Babble.objects.get_or_404(id=pk)
         comments = Comment.objects.filter(babble=babble)
         comments = pagenator.paginate_queryset(comments, request)

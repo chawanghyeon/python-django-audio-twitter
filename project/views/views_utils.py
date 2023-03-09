@@ -206,7 +206,7 @@ def get_babbles_from_db(user: User, next: int) -> List[Babble]:
 
     user_cache.set(user.id, data)
 
-    return serialized_data
+    return serialized_data[0:5]
 
 
 def get_user(request: HttpRequest, pk: Optional[str] = None) -> User:

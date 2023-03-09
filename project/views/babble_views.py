@@ -116,13 +116,10 @@ class BabbleViewSet(viewsets.ModelViewSet):
         babbles = Babble.objects.exclude(user=request.user)
         babbles = pagenator.paginate_queryset(babbles, request)
 
-<<<<<<< HEAD
-=======
         if babbles is None:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
         serializer = BabbleSerializer(babbles, many=True)
->>>>>>> bf6b529 (Add paginate logic)
         serialized_data = check_rebabbled(serializer.data, request.user)
         serialized_data = check_liked(serialized_data, request.user)
 

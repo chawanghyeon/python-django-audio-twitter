@@ -72,10 +72,6 @@ class RebabbleViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_404_NOT_FOUND)
 
         serializer = BabbleSerializer(babbles, many=True)
-<<<<<<< HEAD
-
-=======
->>>>>>> bf6b529 (Add paginate logic)
         serialized_data = check_rebabbled(serializer.data, request.user)
         serialized_data = check_liked(serialized_data, request.user)
 
