@@ -1,3 +1,4 @@
+import logging
 from typing import Optional, Type
 
 from django.core.cache import caches
@@ -22,6 +23,8 @@ from project.views.views_utils import (
     set_follower_cache,
 )
 
+logger = logging.getLogger(__name__)
+
 user_cache = caches["default"]
 babble_cache = caches["second"]
 
@@ -35,19 +38,33 @@ class BabbleViewSet(viewsets.ModelViewSet):
 
     @transaction.atomic
     def create(self, request: HttpRequest) -> Response:
-        serializer = BabbleSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        babble = serializer.save(user=request.user)
-        babble = save_keywords(babble)
-
-        serializer = BabbleSerializer(babble)
-
-        set_caches(babble, request.user, serializer.data)
-
-        return Response(
-            serializer.data,
-            status=status.HTTP_201_CREATED,
+        logger.info(
+            f"Received POST request to create a new babble by user {request.user.username}"
         )
+
+        serializer = BabbleSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=False):
+            babble = serializer.save(user=request.user)
+            logger.info(
+                f"New babble created with id {babble.id} by user {request.user.username}"
+            )
+
+            babble = save_keywords(babble)
+            serializer = BabbleSerializer(babble)
+            logger.info(
+                f"Keywords are {serializer.data.get('tags')} for babble with id {babble.id} by user {request.user.username}"
+            )
+            set_caches(babble, request.user, serializer.data)
+
+            response = Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        else:
+            response = Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            logger.warning(
+                f"Validation errors occurred while creating a new babble by user {request.user.username}: {serializer.errors}"
+            )
+
+        return response
 
     def retrieve(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
         pk = int(pk)

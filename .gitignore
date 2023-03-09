@@ -6,3 +6,10 @@ db.sqlite3
 *.mp3
 media
 Babble-Frontend
+.yaml
+.env
+.yml
+.conf
+.config
+migrations
+logs

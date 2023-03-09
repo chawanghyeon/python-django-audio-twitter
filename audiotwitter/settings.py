@@ -217,3 +217,36 @@ if DEBUG:
     #         },
     #     },
     # }
+
+
+ELASTICSEARCH_DSL = {
+    "default": {"hosts": "localhost:9200"},
+}
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "file": {
+            "level": "INFO",
+            "class": "logging.FileHandler",
+            "filename": "logs/debug.log",
+            "formatter": "json",
+        },
+    },
+    "formatters": {
+        "json": {
+            "format": '{"timestamp": "%(asctime)s", "level": "%(levelname)s", "logger": "%(name)s", "message": "%(message)s"}',
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["file"],
+            "level": "INFO",
+        },
+        "project": {
+            "handlers": ["file"],
+            "level": "INFO",
+        },
+    },
+}

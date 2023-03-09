@@ -83,7 +83,7 @@ def set_follower_cache(babble: Babble, user: User) -> None:
             cache_data.update(user_cache_data[babble_id])
             user_cache_data.pop(babble_id)
 
-        user_cache_data[babble_id] = cache_data
+        user_cache_data = {babble.id: cache_data, **user_cache_data}
 
         if len(user_cache_data) > 30:
             user_cache_data.popitem()
@@ -93,10 +93,15 @@ def set_follower_cache(babble: Babble, user: User) -> None:
 
 def set_user_cache(babble: Babble, user: User) -> None:
     user_cache_data = user_cache.get(user.id, {})
-    user_cache_data[babble.id] = {
-        "is_rebabbled": False,
-        "is_liked": False,
+
+    temp = {
+        babble.id: {
+            "is_rebabble": False,
+            "is_like": False,
+        }
     }
+
+    user_cache_data = {**temp, **user_cache_data}
 
     user_cache.set(user.id, user_cache_data)
 
