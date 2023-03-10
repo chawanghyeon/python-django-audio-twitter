@@ -1,9 +1,0 @@
-filebeat.inputs:
-    - type: log
-      enabled: true
-      paths:
-          - /logs/*.log
-      fields:
-          app_id: audiotwitter
-output.logstash:
-    hosts: ["logstash:5044"]

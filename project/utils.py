@@ -17,3 +17,17 @@ def audio_file_path(instance: Any, filename: str) -> str:
     filepath = now.strftime("audio/%Y/%m/%d")
     filename = str(uuid.uuid4().hex) + "-" + str(now.strftime("%H%M%S")) + ".mp3"
     return os.path.join(filepath, filename)
+
+
+import json
+import logging
+
+
+class JsonFormatter(logging.Formatter):
+    def format(self, record):
+        log_data = {
+            "level": record.levelname,
+            "message": record.getMessage(),
+            "module": record.module,
+        }
+        return json.dumps(log_data, ensure_ascii=False).encode("utf-8")

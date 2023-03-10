@@ -218,34 +218,31 @@ if DEBUG:
     #     },
     # }
 
-
-ELASTICSEARCH_DSL = {
-    "default": {"hosts": "localhost:9200"},
-}
-
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "formatters": {
+        "json": {
+            "()": "project.utils.JsonFormatter",
+        }
+    },
     "handlers": {
-        "file": {
+        "logstash": {
             "level": "INFO",
-            "class": "logging.FileHandler",
-            "filename": "logs/debug.log",
+            "class": "logstash.TCPLogstashHandler",
+            "host": "localhost",  # Replace with the IP or hostname of your Logstash server
+            "port": 50000,  # This is the default port that Logstash listens on
+            "version": 1,
             "formatter": "json",
         },
     },
-    "formatters": {
-        "json": {
-            "format": '{"timestamp": "%(asctime)s", "level": "%(levelname)s", "logger": "%(name)s", "message": "%(message)s"}',
-        },
-    },
     "loggers": {
-        "django": {
-            "handlers": ["file"],
+        "": {
+            "handlers": ["logstash"],
             "level": "INFO",
         },
-        "project": {
-            "handlers": ["file"],
+        "django": {
+            "handlers": ["logstash"],
             "level": "INFO",
         },
     },
