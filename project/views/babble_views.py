@@ -40,7 +40,6 @@ class BabbleViewSet(viewsets.ModelViewSet):
     def create(self, request: HttpRequest) -> Response:
         log_data = {
             "user": request.user.username,
-            "model": "Babble",
             "action": "create",
             "status": "",
             "method": request.method,
@@ -62,7 +61,7 @@ class BabbleViewSet(viewsets.ModelViewSet):
 
         log_data["status"] = status.HTTP_201_CREATED
         log_data["babble_id"] = babble.id
-        log_data["keywords"] = serializer.data["keywords"]
+        log_data["keywords"] = serializer.data["tags"]
         logger.info(log_data)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -70,7 +69,6 @@ class BabbleViewSet(viewsets.ModelViewSet):
     def retrieve(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
         log_data = {
             "user": request.user.username,
-            "model": "Babble",
             "action": "retrieve",
             "status": "",
             "babble_id": pk,
@@ -109,7 +107,6 @@ class BabbleViewSet(viewsets.ModelViewSet):
     def update(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
         log_data = {
             "user": request.user.username,
-            "model": "Babble",
             "action": "update",
             "status": "",
             "babble_id": pk,
@@ -143,7 +140,6 @@ class BabbleViewSet(viewsets.ModelViewSet):
     def destroy(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
         log_data = {
             "user": request.user.username,
-            "model": "Babble",
             "action": "destroy",
             "status": "",
             "babble_id": pk,
@@ -169,7 +165,6 @@ class BabbleViewSet(viewsets.ModelViewSet):
     def list(self, request: HttpRequest) -> Response:
         log_data = {
             "user": request.user.username,
-            "model": "Babble",
             "action": "list",
             "status": "",
             "method": request.method,
@@ -210,7 +205,6 @@ class BabbleViewSet(viewsets.ModelViewSet):
     def explore(self, request: HttpRequest) -> Response:
         log_data = {
             "user": request.user.username,
-            "model": "Babble",
             "action": "explore",
             "status": "",
             "method": request.method,
@@ -241,7 +235,6 @@ class BabbleViewSet(viewsets.ModelViewSet):
     def profile(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
         log_data = {
             "user": request.user.username,
-            "model": "Babble",
             "action": "profile",
             "status": "",
             "babble_id": pk,

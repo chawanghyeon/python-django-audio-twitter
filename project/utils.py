@@ -29,5 +29,18 @@ class JsonFormatter(logging.Formatter):
             "level": record.levelname,
             "message": record.getMessage(),
             "module": record.module,
+            "function": record.funcName,
         }
+
+        temp = None
+        try:
+            temp = dict(record.msg)
+        except ValueError:
+            temp = None
+
+        if isinstance(temp, dict):
+            for key, value in temp.items():
+                log_data[key] = value
+            del log_data["message"]
+
         return json.dumps(log_data, ensure_ascii=False).encode("utf-8")

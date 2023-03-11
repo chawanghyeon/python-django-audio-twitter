@@ -235,6 +235,9 @@ LOGGING = {
             "version": 1,
             "formatter": "json",
         },
+        "console": {
+            "class": "logging.StreamHandler",
+        },
     },
     "loggers": {
         "": {
@@ -242,7 +245,7 @@ LOGGING = {
             "level": "INFO",
         },
         "django": {
-            "handlers": ["logstash"],
+            "handlers": ["console"],
             "level": "INFO",
         },
     },
