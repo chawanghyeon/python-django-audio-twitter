@@ -1,3 +1,5 @@
+import logging
+
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
 from django.http import HttpRequest
@@ -9,6 +11,8 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from project.models import User
 from project.serializers import UserSerializer
 
+logger = logging.getLogger(__name__)
+
 
 class AuthViewSet(viewsets.GenericViewSet):
     queryset = User.objects.all()
@@ -17,14 +21,34 @@ class AuthViewSet(viewsets.GenericViewSet):
 
     @action(detail=False, methods=["post"], url_name="signup")
     def signup(self, request: HttpRequest) -> Response:
+        log_data = {
+            "status": "",
+            "method": request.method,
+        }
+
+        log_data["status"] = status.HTTP_102_PROCESSING
+        logger.info(log_data)
         serializer = UserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(password=make_password(request.data.get("password")))
+
+        log_data["status"] = status.HTTP_201_CREATED
+        log_data["user"] = request.data.get("username")
+        logger.info(log_data)
 
         return Response(status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=["post"], url_name="signin")
     def signin(self, request: HttpRequest) -> Response:
+        log_data = {
+            "user": request.data.get("username"),
+            "status": "",
+            "method": request.method,
+        }
+
+        log_data["status"] = status.HTTP_102_PROCESSING
+        logger.info(log_data)
+
         data = {
             "username": request.data.get("username"),
             "password": request.data.get("password"),
@@ -33,6 +57,9 @@ class AuthViewSet(viewsets.GenericViewSet):
         token = TokenObtainPairSerializer().validate(data)
         user = authenticate(**data)
         serializer = UserSerializer(user)
+
+        log_data["status"] = status.HTTP_200_OK
+        logger.info(log_data)
 
         return Response(
             {

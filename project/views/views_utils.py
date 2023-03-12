@@ -223,7 +223,10 @@ def get_user(request: HttpRequest, pk: Optional[str] = None) -> User:
     if id is None:
         user = request.user
     else:
-        user = User.objects.get(id=id)
+        try:
+            user = User.objects.get(id=id)
+        except User.DoesNotExist:
+            raise User.DoesNotExist
 
     return user
 
