@@ -7,12 +7,6 @@ from django.http import Http404
 
 
 class PrivateUserManager(UserManager):
-    def get_or_none(self, **kwargs) -> Any | None:
-        try:
-            return self.get(**kwargs)
-        except ObjectDoesNotExist:
-            return None
-
     def get_or_404(self, **kwargs) -> Any:
         try:
             return self.get(**kwargs)
@@ -21,12 +15,6 @@ class PrivateUserManager(UserManager):
 
 
 class DefaultManager(models.Manager):
-    def get_or_none(self, **kwargs) -> Any | None:
-        try:
-            return self.get(**kwargs)
-        except ObjectDoesNotExist:
-            return None
-
     def get_or_404(self, **kwargs) -> Any:
         try:
             return self.get(**kwargs)
