@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "likes.apps.LikesConfig",
     "comments.apps.CommentsConfig",
     "followers.apps.FollowersConfig",
+    "tags.apps.TagsConfig",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -163,7 +164,7 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
-        "project.permissions.IsOwnerOrReadOnly",
+        "core.permissions.IsOwnerOrReadOnly",
     ],
 }
 
