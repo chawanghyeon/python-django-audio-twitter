@@ -25,26 +25,26 @@ from rest_framework_simplejwt.views import (
     TokenVerifyView,
 )
 
-from project.views import (
-    auth_views,
-    babble_views,
-    comment_views,
-    follower_views,
-    like_views,
-    rebabble_views,
-    tag_views,
-    user_views,
-)
+from babbles.views import BabbleViewSet
+from comments.views import CommentViewSet
+from core.views import AuthViewSet
+from followers.views import FollowerViewSet
+from likes.views import LikeViewSet
+from notifications.views import NotificationViewSet
+from rebabbles.views import RebabbleViewSet
+from tags.views import TagViewSet
+from users.views import UserViewSet
 
 router = DefaultRouter()
-router.register(r"user", user_views.UserViewSet, basename="user")
-router.register(r"babble", babble_views.BabbleViewSet, basename="babble")
-router.register(r"comment", comment_views.CommentViewSet, basename="comment")
-router.register(r"follower", follower_views.FollowerViewSet, basename="follower")
-router.register(r"like", like_views.LikeViewSet, basename="like")
-router.register(r"auth", auth_views.AuthViewSet, basename="auth")
-router.register(r"tag", tag_views.TagViewSet, basename="tag")
-router.register(r"rebabble", rebabble_views.RebabbleViewSet, basename="rebabble")
+router.register(r"user", UserViewSet, basename="user")
+router.register(r"babble", BabbleViewSet, basename="babble")
+router.register(r"comment", CommentViewSet, basename="comment")
+router.register(r"follower", FollowerViewSet, basename="follower")
+router.register(r"like", LikeViewSet, basename="like")
+router.register(r"auth", AuthViewSet, basename="auth")
+router.register(r"tag", TagViewSet, basename="tag")
+router.register(r"rebabble", RebabbleViewSet, basename="rebabble")
+router.register(r"notification", NotificationViewSet, basename="notification")
 
 urlpatterns = [
     path("admin/", admin.site.urls),

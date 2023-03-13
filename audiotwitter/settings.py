@@ -41,7 +41,14 @@ INTERNAL_IPS = ["127.0.0.1", "localhost", "127.0.0.1:5173", "127.0.0.1:8000"]
 # Application definition
 
 INSTALLED_APPS = [
-    "project.apps.MvcConfig",
+    "core.apps.CoreConfig",
+    "users.apps.UsersConfig",
+    "babbles.apps.BabblesConfig",
+    "notifications.apps.NotificationsConfig",
+    "rebabbles.apps.RebabblesConfig",
+    "likes.apps.LikesConfig",
+    "comments.apps.CommentsConfig",
+    "followers.apps.FollowersConfig",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -52,6 +59,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
+    "channels",
     "corsheaders",
 ]
 
@@ -164,7 +172,7 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
-    "TOKEN_USER_CLASS": "project.models.User",
+    "TOKEN_USER_CLASS": "users.models.User",
 }
 
 CORS_ALLOWED_CREDENTIALS = True
@@ -172,7 +180,7 @@ CORS_ORIGIN_ALLOW_ALL = True
 
 REST_USE_JWT = True
 
-AUTH_USER_MODEL = "project.User"
+AUTH_USER_MODEL = "users.User"
 
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
@@ -194,6 +202,15 @@ CACHES = {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         },
         "CAHCE_TIMEOUT": 60 * 60 * 24 * 7,
+    },
+}
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("localhost", 6380)],
+        },
     },
 }
 
@@ -223,7 +240,7 @@ LOGGING = {
     "disable_existing_loggers": False,
     "formatters": {
         "json": {
-            "()": "project.utils.JsonFormatter",
+            "()": "core.utils.JsonFormatter",
         }
     },
     "handlers": {
