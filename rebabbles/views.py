@@ -10,6 +10,7 @@ from rest_framework.response import Response
 
 from babbles.models import Babble
 from babbles.serializers import BabbleSerializer
+from notifications.utils import send_message_to_user
 from rebabbles.models import Rebabble
 from rebabbles.serializers import RebabbleSerializer
 from rebabbles.utils import (
@@ -40,6 +41,12 @@ class RebabbleViewSet(viewsets.ModelViewSet):
 
         update_user_cache(request.user.id, babble_id, "is_rebabbled", True)
         update_babble_cache(babble_id, "rebabble_count", 1)
+
+        send_message_to_user(
+            request.user,
+            babble.user,
+            f"{request.user.username} rebabbled your babble {babble.id}",
+        )
 
         return Response(status=status.HTTP_201_CREATED)
 

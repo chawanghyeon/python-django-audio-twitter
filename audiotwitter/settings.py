@@ -41,6 +41,7 @@ INTERNAL_IPS = ["127.0.0.1", "localhost", "127.0.0.1:5173", "127.0.0.1:8000"]
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
     "core.apps.CoreConfig",
     "users.apps.UsersConfig",
     "babbles.apps.BabblesConfig",
@@ -94,7 +95,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "audiotwitter.wsgi.application"
-
+ASGI_APPLICATION = "audiotwitter.asgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
@@ -207,12 +208,7 @@ CACHES = {
 }
 
 CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [("localhost", 6380)],
-        },
-    },
+    "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"},
 }
 
 if DEBUG:
@@ -258,12 +254,12 @@ LOGGING = {
         },
     },
     "loggers": {
-        "": {
-            "handlers": ["logstash"],
-            "level": "INFO",
-        },
         "django": {
             "handlers": ["console"],
+            "level": "INFO",
+        },
+        "": {
+            "handlers": ["logstash", "console"],
             "level": "INFO",
         },
     },

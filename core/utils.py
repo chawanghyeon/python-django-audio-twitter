@@ -25,22 +25,31 @@ import logging
 
 class JsonFormatter(logging.Formatter):
     def format(self, record):
-        log_data = {
-            "level": record.levelname,
-            "message": record.getMessage(),
-            "module": record.module,
-            "function": record.funcName,
-        }
-
-        temp = None
         try:
-            temp = dict(record.msg)
-        except ValueError:
-            temp = None
+            log_data = {
+                "level": record.levelname,
+                "message": record.getMessage(),
+                "module": record.module,
+                "function": record.funcName,
+            }
 
-        if isinstance(temp, dict):
-            for key, value in temp.items():
-                log_data[key] = value
-            del log_data["message"]
+            temp = None
+            try:
+                temp = dict(record.msg)
+            except ValueError:
+                temp = None
+
+            if isinstance(temp, dict):
+                for key, value in temp.items():
+                    log_data[key] = value
+                del log_data["message"]
+        except Exception as e:
+            print(e)
+            log_data = {
+                "level": record.levelname,
+                "message": record.getMessage(),
+                "module": record.module,
+                "function": record.funcName,
+            }
 
         return json.dumps(log_data, ensure_ascii=False).encode("utf-8")

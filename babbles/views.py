@@ -23,6 +23,7 @@ from babbles.utils import (
     set_follower_cache,
 )
 from likes.models import Like
+from notifications.utils import send_message_to_followers
 from rebabbles.models import Rebabble
 
 logger = logging.getLogger(__name__)
@@ -48,11 +49,15 @@ class BabbleViewSet(viewsets.ModelViewSet):
         serializer = BabbleSerializer(babble)
         set_caches(babble, request.user, serializer.data)
 
+        send_message_to_followers(
+            request.user, f"{request.user.username} babbled {babble.id}."
+        )
+
         logger.info(
             {
                 "user": request.user.username,
                 "babble_id": babble.id,
-                "tag": babble.tags,
+                "tag": serializer.data["tags"],
             }
         )
 

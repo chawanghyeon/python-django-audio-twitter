@@ -12,6 +12,7 @@ from babbles.models import Babble
 from comments.models import Comment
 from comments.serializers import CommentSerializer
 from comments.utils import update_babble_cache
+from notifications.utils import send_message_to_user
 
 user_cache = caches["default"]
 babble_cache = caches["second"]
@@ -32,6 +33,12 @@ class CommentViewSet(viewsets.ModelViewSet):
 
         babble.comment_count += 1
         babble.save()
+
+        send_message_to_user(
+            request.user,
+            babble.user,
+            f"{request.user.username} commented on your babble {babble.id}.",
+        )
 
         update_babble_cache(babble_id, "comment_count", 1)
         return Response(

@@ -9,6 +9,7 @@ from rest_framework.response import Response
 
 from followers.models import Follower
 from followers.serializers import FollowerSerializer
+from notifications.utils import send_message_to_user
 from users.models import User
 
 user_cache = caches["default"]
@@ -33,6 +34,10 @@ class FollowerViewSet(viewsets.ModelViewSet):
             follower_count=F("follower_count") + 1
         )
         user_cache.delete(request.user.id)
+
+        send_message_to_user(
+            request.user, following, f"{request.user.username} followed you"
+        )
 
         return Response(status=status.HTTP_201_CREATED)
 

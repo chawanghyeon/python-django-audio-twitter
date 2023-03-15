@@ -20,6 +20,7 @@ from likes.utils import (
     update_babble_cache,
     update_user_cache,
 )
+from notifications.utils import send_message_to_user
 
 logger = logging.getLogger(__name__)
 
@@ -36,12 +37,20 @@ class LikeViewSet(viewsets.ModelViewSet):
         babble_id = request.data.get("babble")
         serializer = LikeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(babble_id=babble_id, user=request.user)
+        babble = Babble.objects.get_or_404(id=babble_id)
+        serializer.save(babble=babble, user=request.user)
 
-        Babble.objects.filter(id=babble_id).update(like_count=F("like_count") + 1)
+        babble.like_count += 1
+        babble.save()
 
         update_user_cache(request.user.id, babble_id, "is_liked", True)
         update_babble_cache(babble_id, "like_count", 1)
+
+        send_message_to_user(
+            request.user,
+            babble.user,
+            f"{request.user.username} liked your babble {babble.id}",
+        )
 
         return Response(status=status.HTTP_201_CREATED)
 

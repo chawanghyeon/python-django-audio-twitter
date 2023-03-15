@@ -1,23 +1,25 @@
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
-from rest_framework import viewsets
+from django.http import HttpRequest
+from rest_framework import status, viewsets
+from rest_framework.response import Response
 
-from .models import Notification
-from .serializers import NotificationSerializer
+from notifications.models import Notification
+from notifications.serializers import NotificationSerializer
 
 
 class NotificationViewSet(viewsets.ModelViewSet):
     queryset = Notification.objects.all()
     serializer_class = NotificationSerializer
 
-    def create(self, serializer):
-        notification = serializer.save(user=self.request.user)
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            str(notification.user.id),
-            {
-                "type": "notification_message",
-                "user_id": notification.user.id,
-                "notification_id": notification.id,
-            },
+    def create(self, request: HttpRequest) -> Response:
+        Notification.objects.filter(recipient=request.user, is_read=False).update(
+            is_read=True
         )
+
+        return Response(status=status.HTTP_201_CREATED)
+
+    def list(self, request: HttpRequest) -> Response:
+        queryset = Notification.objects.filter(
+            recipient=self.request.user, is_read=False
+        ).order_by("-created")
+        serializer = NotificationSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
