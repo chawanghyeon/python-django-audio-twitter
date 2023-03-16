@@ -19,7 +19,7 @@ stt = STT()
 
 def check_rebabbled(serialized_babbles: List[Dict], user: User) -> List[Dict]:
     rebabbled_babble_ids = set(
-        Rebabble.objects.filter(user=user).values_list("babble_id", flat=True)
+        Rebabble.objects.filter(user=user).values_list("babble__id", flat=True)
     )
     for data in serialized_babbles:
         data["is_rebabbled"] = data["id"] in rebabbled_babble_ids
@@ -29,7 +29,7 @@ def check_rebabbled(serialized_babbles: List[Dict], user: User) -> List[Dict]:
 
 def check_liked(serialized_babbles: List[Dict], user: User) -> List[Dict]:
     liked_babbles_id = set(
-        Like.objects.filter(user=user).values_list("babble_id", flat=True)
+        Like.objects.filter(user=user).values_list("babble__id", flat=True)
     )
     for data in serialized_babbles:
         data["is_liked"] = data["id"] in liked_babbles_id
@@ -43,8 +43,8 @@ def save_keywords(babble: Babble) -> Babble:
     new_tags = set(keywords) - set(tag_objs.values_list("text", flat=True))
 
     if new_tags:
-        new_tag_objs = [Tag(text=tag) for tag in new_tags]
-        new_tag_objs = Tag.objects.bulk_create(new_tag_objs)
+        new_tag_objs = {Tag(text=tag) for tag in new_tags}
+        new_tag_objs = Tag.objects.bulk_create(new_tag_objs, ignore_conflicts=True)
         tag_objs = set(tag_objs) | set(new_tag_objs)
 
     babble.tags.set(tag_objs)
@@ -54,11 +54,10 @@ def save_keywords(babble: Babble) -> Babble:
 
 
 def set_follower_cache(babble: Babble, user: User) -> None:
-    followers = user.following.all()
+    follower_ids = user.following.values_list("user_id", flat=True)
     babble_id = babble.id
 
-    for follower in followers:
-        user_id = follower.user.id
+    for user_id in follower_ids:
         user_cache_data = user_cache.get(user_id, {})
         cache_data = {
             "is_rebabble": False,
@@ -80,14 +79,14 @@ def set_follower_cache(babble: Babble, user: User) -> None:
 def set_user_cache(babble: Babble, user: User) -> None:
     user_cache_data = user_cache.get(user.id, {})
 
-    temp = {
+    data = {
         babble.id: {
             "is_rebabble": False,
             "is_like": False,
         }
     }
 
-    user_cache_data = {**temp, **user_cache_data}
+    user_cache_data = {**data, **user_cache_data}
 
     user_cache.set(user.id, user_cache_data)
 
@@ -105,8 +104,11 @@ def get_babbles_from_cache(user_cache_data: Dict, user: User, next: int) -> List
     start = next if next else 0
     user_cache_data = dict(list(user_cache_data.items())[start : start + 5])
 
+    babble_ids = list(user_cache_data.keys())
+    babbles_from_cache = babble_cache.get_many(babble_ids)
+
     for id, value in user_cache_data.items():
-        babble = babble_cache.get(id)
+        babble = babbles_from_cache.get(id)
         if babble:
             babble.update(value)
             cached_babbles.append(babble)
@@ -124,9 +126,8 @@ def remove_non_existing_babbles(
     user: User,
     user_cache_data: Dict,
 ) -> None:
-    non_exist_babbles = set(non_cached_babbles) - set(
-        [babble["id"] for babble in serialized_data]
-    )
+    serialized_babble_ids = {babble["id"] for babble in serialized_data}
+    non_exist_babbles = set(non_cached_babbles) - serialized_babble_ids
 
     for id in non_exist_babbles:
         user_cache_data.pop(id, None)
@@ -134,8 +135,8 @@ def remove_non_existing_babbles(
 
 
 def set_babbles_cache(serialized_data: List[Dict]) -> None:
-    for babble in serialized_data:
-        babble_cache.set(babble["id"], babble)
+    babble_data = {babble["id"]: babble for babble in serialized_data}
+    babble_cache.set_many(babble_data)
 
 
 def update_serialized_data(
@@ -176,9 +177,14 @@ def get_babbles_from_db(user: User, next: int) -> List[Babble]:
         start = next
         end = start + 5
 
-    babbles = Babble.objects.filter(
-        Q(user__in=user.self.all().values_list("following", flat=True)) | Q(user=user)
-    ).order_by("-created")[start:end]
+    followings = user.self.all().values_list("following__id", flat=True)
+
+    babbles = (
+        Babble.objects.filter(Q(user__in=followings) | Q(user=user))
+        .select_related("user")
+        .prefetch_related("tags")
+        .order_by("-created")[start:end]
+    )
 
     serializer = BabbleSerializer(babbles, many=True)
     serialized_data = serializer.data
@@ -201,17 +207,11 @@ def get_babbles_from_db(user: User, next: int) -> List[Babble]:
 
 
 def get_user(request: HttpRequest, pk: Optional[str] = None) -> User:
-    id = request.query_params.get("user", None)
+    user_id = request.query_params.get("user", pk) or request.user.id
 
-    if id is None and pk is not None:
-        id = pk
-
-    if id is None:
+    if user_id is None:
         user = request.user
     else:
-        try:
-            user = User.objects.get(id=id)
-        except User.DoesNotExist:
-            raise User.DoesNotExist
+        user = User.objects.get_or_404(id=user_id)
 
     return user
