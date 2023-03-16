@@ -31,7 +31,7 @@ def update_user_cache(user_id: int, babble_id: int, field: str, value: bool) -> 
 
 def check_rebabbled(serialized_babbles: List[Dict], user: User) -> List[Dict]:
     rebabbled_babble_ids = set(
-        Rebabble.objects.filter(user=user).values_list("babble_id", flat=True)
+        Rebabble.objects.filter(user=user).values_list("babble__id", flat=True)
     )
     for data in serialized_babbles:
         data["is_rebabbled"] = data["id"] in rebabbled_babble_ids
@@ -41,7 +41,7 @@ def check_rebabbled(serialized_babbles: List[Dict], user: User) -> List[Dict]:
 
 def check_liked(serialized_babbles: List[Dict], user: User) -> List[Dict]:
     liked_babbles_id = set(
-        Like.objects.filter(user=user).values_list("babble_id", flat=True)
+        Like.objects.filter(user=user).values_list("babble__id", flat=True)
     )
     for data in serialized_babbles:
         data["is_liked"] = data["id"] in liked_babbles_id
@@ -50,17 +50,11 @@ def check_liked(serialized_babbles: List[Dict], user: User) -> List[Dict]:
 
 
 def get_user(request: HttpRequest, pk: Optional[str] = None) -> User:
-    id = request.query_params.get("user", None)
+    user_id = request.query_params.get("user", pk) or request.user.id
 
-    if id is None and pk is not None:
-        id = pk
-
-    if id is None:
+    if user_id is None:
         user = request.user
     else:
-        try:
-            user = User.objects.get(id=id)
-        except User.DoesNotExist:
-            raise User.DoesNotExist
+        user = User.objects.get_or_404(id=user_id)
 
     return user

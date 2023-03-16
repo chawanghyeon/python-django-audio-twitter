@@ -6,14 +6,14 @@ from users.models import User
 
 
 def send_message_to_followers(user: User, message: str) -> None:
-    followers = user.following.all()
+    follower_ids = user.following.values_list("user__id", flat=True)
     notifications = [
         Notification(
             sender=user,
-            recipient=follower.user,
+            recipient=follower_id,
             message=message,
         )
-        for follower in followers
+        for follower_id in follower_ids
     ]
 
     notifications = Notification.objects.bulk_create(notifications)

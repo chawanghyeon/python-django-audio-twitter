@@ -7,18 +7,12 @@ from users.models import User
 
 
 def get_user(request: HttpRequest, pk: Optional[str] = None) -> User:
-    id = request.query_params.get("user", None)
+    user_id = request.query_params.get("user", pk) or request.user.id
 
-    if id is None and pk is not None:
-        id = pk
-
-    if id is None:
+    if user_id is None:
         user = request.user
     else:
-        try:
-            user = User.objects.get(id=id)
-        except User.DoesNotExist:
-            raise User.DoesNotExist
+        user = User.objects.get_or_404(id=user_id)
 
     return user
 
