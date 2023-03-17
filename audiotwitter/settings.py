@@ -109,12 +109,11 @@ ASGI_APPLICATION = "audiotwitter.asgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "test",
-        "USER": "test",
-        "PASSWORD": "test",
-        "HOST": "localhost",  # 'localhost' or the IP address of your PostgreSQL server
-        "PORT": "5432",  # Default is '5432'
-        "options": "-c search_path=audiotwitter",
+        "NAME": "babble",
+        "USER": "babble",
+        "PASSWORD": "babble",
+        "HOST": "localhost",
+        "PORT": "5432",
     }
 }
 
