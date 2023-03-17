@@ -21,22 +21,22 @@ class FollowerViewSet(viewsets.ModelViewSet):
 
     @transaction.atomic
     def create(self, request: HttpRequest) -> Response:
-        following = User.objects.get_or_404(id=request.data.get("following"))
+        following_id = request.data.get("following")
 
         serializer = FollowerSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(user=request.user, following=following)
+        serializer.save(user=request.user, following_id=following_id)
 
         User.objects.filter(id=request.user.id).update(
             following_count=F("following_count") + 1
         )
-        User.objects.filter(id=following.id).update(
+        User.objects.filter(id=following_id).update(
             follower_count=F("follower_count") + 1
         )
         user_cache.delete(request.user.id)
 
         send_message_to_user(
-            request.user, following, f"{request.user.username} followed you"
+            request.user.id, following_id, f"{request.user.username} followed you"
         )
 
         return Response(status=status.HTTP_201_CREATED)

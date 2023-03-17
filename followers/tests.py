@@ -16,9 +16,7 @@ class FollowerViewSetTestCase(APITestCase):
         self.user2 = User.objects.create_user(
             username="user2", password="user2_password"
         )
-        self.follow_url = reverse(
-            "follower-list"
-        )  # Replace 'follower-list' with the actual name of the view in your project
+        self.follow_url = reverse("follower-list")
         self.user1_token = RefreshToken.for_user(self.user1)
         self.user2_token = RefreshToken.for_user(self.user2)
 
@@ -38,9 +36,9 @@ class FollowerViewSetTestCase(APITestCase):
         follower = Follower.objects.create(user=self.user1, following=self.user2)
         self.client.login(username="user1", password="user1_password")
         response = self.client.delete(
-            reverse("follower-detail", args=[follower.id]),
+            reverse("follower-detail", args=[self.user2.id]),
             HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}",
-        )  # Replace 'follower-detail' with the actual name of the view in your project
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(
             Follower.objects.filter(user=self.user1, following=self.user2).exists()
@@ -52,7 +50,5 @@ class FollowerViewSetTestCase(APITestCase):
 
     def test_destroy_follower_not_authenticated(self):
         follower = Follower.objects.create(user=self.user1, following=self.user2)
-        response = self.client.delete(
-            reverse("follower-detail", args=[follower.id])
-        )  # Replace 'follower-detail' with the actual name of the view in your project
+        response = self.client.delete(reverse("follower-detail", args=[follower.id]))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

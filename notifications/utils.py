@@ -31,10 +31,10 @@ def send_message_to_followers(user: User, message: str) -> None:
         )
 
 
-def send_message_to_user(sender: User, recipient: User, message: str) -> None:
+def send_message_to_user(sender: int, recipient: int, message: str) -> None:
     notification = Notification.objects.create(
-        sender=sender,
-        recipient=recipient,
+        sender_id=sender,
+        recipient_id=recipient,
         message=message,
     )
 
