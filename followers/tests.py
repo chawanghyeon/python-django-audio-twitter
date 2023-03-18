@@ -44,11 +44,11 @@ class FollowerViewSetTestCase(APITestCase):
             Follower.objects.filter(user=self.user1, following=self.user2).exists()
         )
 
-    def test_create_follower_not_authenticated(self):
+    def test_create_follower_no_auth(self):
         response = self.client.post(self.follow_url, {"following": self.user2.id})
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_destroy_follower_not_authenticated(self):
+    def test_destroy_follower_no_auth(self):
         follower = Follower.objects.create(user=self.user1, following=self.user2)
         response = self.client.delete(reverse("follower-detail", args=[follower.id]))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
