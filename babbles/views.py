@@ -80,7 +80,9 @@ class BabbleViewSet(viewsets.ModelViewSet):
         return Response(babble_data, status=status.HTTP_200_OK)
 
     @transaction.atomic
-    def update(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
+    def partial_update(
+        self, request: HttpRequest, pk: Optional[str] = None
+    ) -> Response:
         babble = Babble.objects.get_or_404(id=pk)
         serializer = BabbleSerializer(babble, data=request.data)
         serializer.is_valid(raise_exception=True)
