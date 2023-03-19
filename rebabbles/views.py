@@ -43,8 +43,8 @@ class RebabbleViewSet(viewsets.ModelViewSet):
         update_babble_cache(babble_id, "rebabble_count", 1)
 
         send_message_to_user(
-            request.user,
-            babble.user,
+            request.user.id,
+            babble.user.id,
             f"{request.user.username} rebabbled your babble {babble.id}",
         )
 
