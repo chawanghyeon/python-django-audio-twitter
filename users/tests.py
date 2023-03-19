@@ -1,90 +1,108 @@
-from django.contrib.auth.models import User
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from babbles.models import Babble
+from users.models import User
 from users.serializers import UserSerializer
 
 
 class UserViewSetTestCase(APITestCase):
     def setUp(self):
-        self.user = User.objects.create_user(
-            username="testuser", password="testpassword"
+        self.user1 = User.objects.create_user(
+            username="user1", password="user1_password"
         )
-        self.another_user = User.objects.create_user(
-            username="anotheruser", password="anotherpassword"
+        self.user2 = User.objects.create_user(
+            username="user2", password="user2_password"
         )
 
-        self.babble = Babble.objects.create(
-            user=self.user, content="Test babble content"
-        )
+        self.babble = Babble.objects.create(user=self.user1)
+        self.user1_token = RefreshToken.for_user(self.user1)
+        self.user2_token = RefreshToken.for_user(self.user2)
 
     def test_retrieve_user(self):
-        self.client.login(username="testuser", password="testpassword")
-        url = reverse("user-detail", kwargs={"pk": self.user.id})
-        response = self.client.get(url)
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}"
+        )
+        response = self.client.get(reverse("user-detail", args=[self.user1.id]))
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        serializer = UserSerializer(self.user)
+        serializer = UserSerializer(self.user1)
         self.assertEqual(response.data, serializer.data)
 
     def test_retrieve_user_no_auth(self):
-        url = reverse("user-detail", kwargs={"pk": self.user.id})
-        response = self.client.get(url)
+        response = self.client.get(reverse("user-detail", args=[self.user1.id]))
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_partial_update_user(self):
-        self.client.login(username="testuser", password="testpassword")
-        url = reverse("user-detail", kwargs={"pk": self.user.id})
-        data = {"first_name": "NewFirstName"}
-        response = self.client.patch(url, data)
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}"
+        )
+        response = self.client.patch(
+            reverse("user-detail", args=[self.user1.id]), {"first_name": "NewFirstName"}
+        )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.user.refresh_from_db()
-        self.assertEqual(self.user.first_name, "NewFirstName")
+        self.user1.refresh_from_db()
+        self.assertEqual(self.user1.first_name, "NewFirstName")
 
     def test_partial_update_user_no_auth(self):
-        url = reverse("user-detail", kwargs={"pk": self.user.id})
-        data = {"first_name": "NewFirstName"}
-        response = self.client.patch(url, data)
+        response = self.client.patch(
+            reverse("user-detail", args=[self.user1.id]), {"first_name": "NewFirstName"}
+        )
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_destroy_user(self):
-        self.client.login(username="testuser", password="testpassword")
-        url = reverse("user-detail", kwargs={"pk": self.user.id})
-        data = {"password": "testpassword"}
-        response = self.client.delete(url, data)
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}"
+        )
+        response = self.client.delete(
+            reverse("user-detail", args=[self.user1.id]), {"password": "user1_password"}
+        )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(User.objects.filter(username="testuser").exists())
 
     def test_destroy_user_wrong_password(self):
-        self.client.login(username="testuser", password="testpassword")
-        url = reverse("user-detail", kwargs={"pk": self.user.id})
-        data = {"password": "wrongpassword"}
-        response = self.client.delete(url, data)
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}"
+        )
+        response = self.client.delete(
+            reverse("user-detail", args=[self.user1.id]), {"password": "wrongpassword"}
+        )
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_destroy_user_no_auth(self):
-        url = reverse("user-detail", kwargs={"pk": self.user.id})
-        data = {"password": "testpassword"}
-        response = self.client.delete(url, data)
+        response = self.client.delete(
+            reverse("user-detail", args=[self.user1.id]), {"password": "user1_password"}
+        )
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_update_password(self):
-        self.client.login(username="testuser", password="testpassword")
-        url = reverse("user-password", kwargs={"pk": self.user.id})
-        data = {"old_password": "testpassword", "new_password": "newpassword"}
-        response = self.client.put(url, data)
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}"
+        )
+        response = self.client.patch(
+            reverse("user-password"),
+            {"old_password": "user1_password", "new_password": "newpassword"},
+        )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(self.user.check_password("newpassword"))
+        self.user1.refresh_from_db()
+        self.assertTrue(self.user1.check_password("newpassword"))
 
     def test_update_password_wrong_old_password(self):
-        self.client.login(username="testuser", password="testpassword")
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}"
+        )
+        response = self.client.patch(
+            reverse("user-password"),
+            {"old_password": "wrongpassword", "new_password": "newpassword"},
+        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
