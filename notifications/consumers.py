@@ -1,12 +1,8 @@
 import json
 
 from channels.generic.websocket import AsyncWebsocketConsumer
-from django.contrib.auth import get_user_model
 
 from notifications.models import Notification
-from users.models import User
-
-User = get_user_model()
 
 
 class NotificationConsumer(AsyncWebsocketConsumer):
@@ -20,13 +16,6 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         user = self.scope["user"]
         if user.is_authenticated:
             await self.channel_layer.group_discard(str(user.id), self.channel_name)
-
-    async def receive(self, text_data):
-        text_data_json = json.loads(text_data)
-        message = text_data_json["message"]
-        await self.channel_layer.group_send(
-            "notifications", {"type": "notification.message", "message": message}
-        )
 
     async def notification_message(self, event):
         notification_id = event["notification_id"]

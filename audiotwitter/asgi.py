@@ -9,18 +9,20 @@ https://docs.djangoproject.com/en/4.1/howto/deployment/asgi/
 
 import os
 
-from channels.routing import ProtocolTypeRouter, URLRouter
 from django.core.asgi import get_asgi_application
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "audiotwitter.settings")
+django_asgi_app = get_asgi_application()
+
+from channels.routing import ProtocolTypeRouter, URLRouter
 from django.urls import path
 
 from notifications.consumers import NotificationConsumer
 from notifications.middlewares import TokenAuthMiddleware
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "audiotwitter.settings")
-
 application = ProtocolTypeRouter(
     {
-        "http": get_asgi_application(),
+        "http": django_asgi_app,
         "websocket": TokenAuthMiddleware(
             URLRouter(
                 [
