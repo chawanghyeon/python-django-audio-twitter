@@ -1,28 +1,27 @@
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
+from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import Babble, Tag, User
-from .serializers import BabbleSerializer
+from babbles.models import Babble
+from babbles.serializers import BabbleSerializer
+from tags.models import Tag
+from users.models import User
 
 
 class TagViewSetTestCase(APITestCase):
     def setUp(self):
         self.client = self.client
-        self.user = User.objects.create_user(
-            username="testuser", password="testpassword"
-        )
+        self.user = User.objects.create_user(username="user", password="user_password")
         self.tag = Tag.objects.create(text="testtag")
-        self.babble = Babble.objects.create(
-            user=self.user, content="Test babble content"
-        )
+        self.babble = Babble.objects.create(user=self.user)
         self.babble.tags.add(self.tag)
         self.babble.save()
+        self.token = str(RefreshToken.for_user(self.user).access_token)
 
     def test_retrieve_tag(self):
-        self.client.login(username="testuser", password="testpassword")
-        url = reverse("tag-detail", kwargs={"pk": self.tag.text})
-        response = self.client.get(url)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.token}")
+        response = self.client.get(reverse("tag-detail", args=[self.tag.text]))
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 1)
@@ -33,26 +32,17 @@ class TagViewSetTestCase(APITestCase):
         self.assertEqual(response.data["results"], serialized_data)
 
     def test_retrieve_tag_not_found(self):
-        self.client.login(username="testuser", password="testpassword")
-        url = reverse("tag-detail", kwargs={"pk": "nonexistenttag"})
-        response = self.client.get(url)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.token}")
+        response = self.client.get(reverse("tag-detail", args=["notfound"]))
 
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(len(response.data["results"]), 0)
 
     def test_retrieve_tag_no_auth(self):
-        url = reverse("tag-detail", kwargs={"pk": self.tag.text})
-        response = self.client.get(url)
+        response = self.client.get(reverse("tag-detail", args=[self.tag.text]))
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data["results"]), 1)
-
-        serializer = BabbleSerializer(self.babble)
-        serialized_data = [serializer.data]
-
-        self.assertEqual(response.data["results"], serialized_data)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_retrieve_tag_not_found_no_auth(self):
-        url = reverse("tag-detail", kwargs={"pk": "nonexistenttag"})
-        response = self.client.get(url)
+        response = self.client.get(reverse("tag-detail", args=[self.tag.text]))
 
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
