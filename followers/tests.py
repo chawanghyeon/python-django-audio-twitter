@@ -21,7 +21,6 @@ class FollowerViewSetTestCase(APITestCase):
         self.user2_token = RefreshToken.for_user(self.user2)
 
     def test_create_follower(self):
-        self.client.login(username="user1", password="user1_password")
         response = self.client.post(
             self.follow_url,
             {"following": self.user2.id},
@@ -31,10 +30,13 @@ class FollowerViewSetTestCase(APITestCase):
         self.assertTrue(
             Follower.objects.filter(user=self.user1, following=self.user2).exists()
         )
+        self.user1.refresh_from_db()
+        self.user2.refresh_from_db()
+        self.assertEqual(self.user1.following_count, 1)
+        self.assertEqual(self.user2.follower_count, 1)
 
     def test_destroy_follower(self):
-        follower = Follower.objects.create(user=self.user1, following=self.user2)
-        self.client.login(username="user1", password="user1_password")
+        self.test_create_follower()
         response = self.client.delete(
             reverse("follower-detail", args=[self.user2.id]),
             HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}",
@@ -43,6 +45,10 @@ class FollowerViewSetTestCase(APITestCase):
         self.assertFalse(
             Follower.objects.filter(user=self.user1, following=self.user2).exists()
         )
+        self.user1.refresh_from_db()
+        self.user2.refresh_from_db()
+        self.assertEqual(self.user1.following_count, 0)
+        self.assertEqual(self.user2.follower_count, 0)
 
     def test_create_follower_no_auth(self):
         response = self.client.post(self.follow_url, {"following": self.user2.id})
