@@ -35,8 +35,8 @@ class CommentViewSet(viewsets.ModelViewSet):
         babble.save()
 
         send_message_to_user(
-            request.user,
-            babble.user,
+            request.user.id,
+            babble.user.id,
             f"{request.user.username} commented on your babble {babble.id}.",
         )
 
@@ -46,7 +46,23 @@ class CommentViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
-    def update(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
+    def retrieve(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
+        pagenator = CursorPagination()
+        pagenator.page_size = 7
+        babble = Babble.objects.get_or_404(id=pk)
+        query = Comment.objects.filter(babble=babble)
+        query = pagenator.paginate_queryset(query, request)
+
+        if query is None:
+            raise Http404
+
+        serializer = CommentSerializer(query, many=True)
+
+        return pagenator.get_paginated_response(serializer.data)
+
+    def partial_update(
+        self, request: HttpRequest, pk: Optional[str] = None
+    ) -> Response:
         comment = Comment.objects.get_or_404(id=pk)
 
         serializer = CommentSerializer(comment, data=request.data)
@@ -65,17 +81,3 @@ class CommentViewSet(viewsets.ModelViewSet):
         update_babble_cache(babble_id, "comment_count", -1)
 
         return Response(status=status.HTTP_200_OK)
-
-    def retrieve(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
-        pagenator = CursorPagination()
-        pagenator.page_size = 7
-        babble = Babble.objects.get_or_404(id=pk)
-        query = Comment.objects.filter(babble=babble)
-        query = pagenator.paginate_queryset(query, request)
-
-        if query is None:
-            raise Http404
-
-        serializer = CommentSerializer(query, many=True)
-
-        return pagenator.get_paginated_response(serializer.data)

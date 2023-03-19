@@ -33,9 +33,7 @@ class BabbleViewSetTestCase(APITestCase):
             user=self.user2, audio=self.test_audio_file1
         )
 
-        self.babble_url = reverse(
-            "babble-list"
-        )  # Replace with the actual viewset name in your project
+        self.babble_url = reverse("babble-list")
 
         self.user1_token = RefreshToken.for_user(self.user1)
         self.user2_token = RefreshToken.for_user(self.user2)
@@ -106,9 +104,7 @@ class BabbleViewSetTestCase(APITestCase):
         )
         response = self.client.get(reverse("babble-explore"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(
-            len(response.data["results"]), 1
-        )  # user1 should not see their own babbles
+        self.assertEqual(len(response.data["results"]), 1)
 
     def test_profile_babbles(self):
         self.client.credentials(
@@ -116,7 +112,7 @@ class BabbleViewSetTestCase(APITestCase):
         )
         response = self.client.get(reverse("babble-profile", args=[self.user2.id]))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data["results"]), 1)  # user2 has only one babble
+        self.assertEqual(len(response.data["results"]), 1)
 
     def test_create_babble_no_auth(self):
         response = self.client.post(self.babble_url, {"content": "New babble"})
@@ -126,7 +122,7 @@ class BabbleViewSetTestCase(APITestCase):
         response = self.client.get(reverse("babble-detail", args=[self.babble1.id]))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_update_babble_no_auth(self):
+    def test_partial_update_babble_no_auth(self):
         response = self.client.patch(
             reverse("babble-detail", args=[self.babble1.id]),
             {"content": "Updated babble"},
