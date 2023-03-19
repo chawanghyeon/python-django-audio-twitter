@@ -21,10 +21,12 @@ class FollowerViewSetTestCase(APITestCase):
         self.user2_token = RefreshToken.for_user(self.user2)
 
     def test_create_follower(self):
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}"
+        )
         response = self.client.post(
             self.follow_url,
             {"following": self.user2.id},
-            HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}",
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(
@@ -36,10 +38,12 @@ class FollowerViewSetTestCase(APITestCase):
         self.assertEqual(self.user2.follower_count, 1)
 
     def test_destroy_follower(self):
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}"
+        )
         self.test_create_follower()
         response = self.client.delete(
             reverse("follower-detail", args=[self.user2.id]),
-            HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(

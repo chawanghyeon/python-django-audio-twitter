@@ -47,8 +47,8 @@ class LikeViewSet(viewsets.ModelViewSet):
         update_babble_cache(babble_id, "like_count", 1)
 
         send_message_to_user(
-            request.user,
-            babble.user,
+            request.user.id,
+            babble.user.id,
             f"{request.user.username} liked your babble {babble.id}",
         )
 
@@ -59,7 +59,7 @@ class LikeViewSet(viewsets.ModelViewSet):
         pk = int(pk)
 
         Babble.objects.filter(id=pk).update(like_count=F("like_count") - 1)
-        Like.objects.filter(babble__id=pk, user=request.user).delete()
+        Like.objects.filter(user=request.user, babble=pk).delete()
 
         update_user_cache(request.user.id, pk, "is_liked", False)
         update_babble_cache(pk, "like_count", -1)
