@@ -16,7 +16,7 @@ class NotificationConsumerTestCase(APITestCase):
         )
         self.token = str(RefreshToken.for_user(self.user1).access_token)
 
-    async def test_connect_authenticated(self):
+    async def test_connect(self):
         communicator = WebsocketCommunicator(
             application, f"ws://localhost:8000/ws/?token={self.token}"
         )
@@ -30,7 +30,7 @@ class NotificationConsumerTestCase(APITestCase):
         await communicator.connect()
         await communicator.disconnect()
 
-    async def test_connect_not_authenticated(self):
+    async def test_connect_no_auth(self):
         communicator = WebsocketCommunicator(
             application, f"ws://localhost:8000/ws/?token=wrong_token"
         )
