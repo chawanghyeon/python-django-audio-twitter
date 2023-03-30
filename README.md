@@ -1,10 +1,10 @@
 # Babble
 
-핸드폰 타자를 치는 것에 피로감을 느끼는 사람들을 위해 오디오를 기반으로 트위터같은 SNS를 만들면 어떨까하는 생각에 시작한 프로젝트입니다.
+오디오를 기반으로 트위터같은 SNS를 만들면 어떨까 하는 생각에 시작한 프로젝트입니다. 핸드폰 타자를 치는 것에 피로감을 느끼는 사람들을 위해 만들었습니다.
 
 ## 사용한 기술스택
 
-Django, Django restframework, Drf spectacular, Drf simple jwt, Django channels, ELK stack, whisper model, konlpy, koelectra
+Django, Django REST framework, DRF spectacular, DRF simple JWT, Django channels, ELK stack, whisper model, konlpy, koelectra
 
 ## 구현기능
 
@@ -30,7 +30,7 @@ Django, Django restframework, Drf spectacular, Drf simple jwt, Django channels, 
 
 ## 문제해결
 
-1. 오디오를 텍스트로 변환하고 변환된 텍스트에서 감정과 키워드를 추출하는 작업을 외부 api를 사용해서 개발했으나, 속도도 너무 느리고 외부 api가 많으면 그만큼 의존도가 높아져 지속적인 개발에 위험이 있다 판단해 공개된 인공지능들을 사용해 의존도를 낮췄습니다.
+1. 오디오를 텍스트로 변환하고 변환된 텍스트에서 감정과 키워드를 추출하는 작업을 외부 api를 사용해서 개발했으나, 속도가 너무 느리고 외부 api가 많아지면 의존도가 높아지는 위험이 있다고 판단하여 공개된 인공지능을 사용하여 의존도를 낮췄습니다.
 2. 리퀘스트의 요청자가 모델의 유저와 다르면 읽기만 허용해주는 권한을 설정하고 싶었으나 장고에서는 기본적으로 제공하지 않아 직접 만들었습니다.
     - 코드
         
