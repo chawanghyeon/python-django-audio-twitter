@@ -49,7 +49,7 @@ Django, Django restframework, Drf spectacular, Drf simple jwt, Django channels, 
         ```
         
 3. whisper.py에서 외부라이브러리 import whisper가 안되는 오류가 발생했습니다. 파일 이름을 수정하니 해결되었습니다.
-4. 문자열 기반 필드에 null=True 옵션을 넣었더니 빈 문자열이 아닌 None으로도 저장되는 오류가 발생해null=True를 지워서 해결했습니다.
+4. 문자열 기반 필드에 null=True 옵션을 넣었더니 빈 문자열이 아닌 None으로도 저장되는 오류가 발생해 null=True를 지워서 해결했습니다.
 5. 처음엔 한 유저가 게시물을 작성하면 db에 저장되고 게시물을 조회할 때 한 유저가 팔로우하는 유저들을 전부 조회하고 그 유저들의 게시물을 가져오는 방식으로 만들었습니다. 그런데 읽기 작업이 굉장히 많은 SNS 특성상 이 구조가 좋지 못하다 생각해 트위터의 구조를 보고 캐시를 적용했습니다.
     - 캐시 적용 전
         
