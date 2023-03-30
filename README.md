@@ -104,3 +104,4 @@ Django, Django REST framework, DRF spectacular, DRF simple JWT, Django channels,
         | ------ | ----------- | ---------- | ---------- | ---------- | ------------ |
         | Total queries: 5 in 0.0456s |  |  |  |  |  |
 9. 새로운 기능을 추가하면 제대로 구동이 되는지 화면상에서 하나하나 눌러보며 테스트를 하다가 너무 불편하고 비효율적이라 느껴 테스트코드를 작성하기 시작했습니다. 총 62개의 테스트 코드를 작성했습니다.
+10. sqlite에서 postgresql로 전환할 때 sqlite에 있는 데이터들을 사용하지 못하는 문제가 있었습니다. sqlite의 데이터들을 dumpdata명령어로 dumpdata를 만들고 그 데이터들을 postgresql에 다시 로드해 데이터를 옮겼습니다.
