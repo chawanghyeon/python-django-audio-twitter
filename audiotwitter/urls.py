@@ -36,7 +36,7 @@ from tags.views import TagViewSet
 from users.views import UserViewSet
 
 router = DefaultRouter(trailing_slash=False)
-router.register(r"user", UserViewSet, basename="user")
+router.register(r"users", UserViewSet, basename="users")
 router.register(r"babbles", BabbleViewSet, basename="babbles")
 router.register(
     r"babbles/(?P<babble_id>\d+)/comments", CommentViewSet, basename="comments"
