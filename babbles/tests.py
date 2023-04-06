@@ -36,11 +36,11 @@ class BabbleViewSetTestCase(APITestCase):
         self.babble_url = reverse("babbles-list")
 
         self.user1_token = RefreshToken.for_user(self.user1)
-
-    def test_create_babble(self):
         self.client.credentials(
             HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}"
         )
+
+    def test_create_babble(self):
         with open("test.mp3", "rb") as test_audio_file:
             response = self.client.post(
                 self.babble_url, {"audio": test_audio_file}, format="multipart"
@@ -52,17 +52,11 @@ class BabbleViewSetTestCase(APITestCase):
         )
 
     def test_retrieve_babble(self):
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}"
-        )
         response = self.client.get(reverse("babbles-detail", args=[self.babble1.id]))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["audio"], self.babble1.audio.url)
 
     def test_partial_update_babble(self):
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}"
-        )
         temp = self.babble1.audio
         response = self.client.patch(
             reverse("babbles-detail", args=[self.babble1.id]),
@@ -73,55 +67,43 @@ class BabbleViewSetTestCase(APITestCase):
         self.assertNotEqual(self.babble1.audio, temp)
 
     def test_destroy_babble(self):
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}"
-        )
         response = self.client.delete(reverse("babbles-detail", args=[self.babble1.id]))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(Babble.objects.filter(id=self.babble1.id).exists())
 
     def test_list_babbles1(self):
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}"
-        )
         Follower.objects.create(user=self.user1, following=self.user2)
         response = self.client.get(self.babble_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 1)
 
     def test_list_babbles2(self):
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}"
-        )
         response = self.client.get(self.babble_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 1)
 
     def test_explore_babbles(self):
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}"
-        )
         response = self.client.get(reverse("babbles-explore"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 1)
 
     def test_profile_babbles(self):
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}"
-        )
         response = self.client.get(reverse("babbles-profile", args=[self.user2.id]))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 1)
 
     def test_create_babble_no_auth(self):
+        self.client.credentials()
         response = self.client.post(self.babble_url, {"content": "New babble"})
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_retrieve_babble_no_auth(self):
+        self.client.credentials()
         response = self.client.get(reverse("babbles-detail", args=[self.babble1.id]))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_partial_update_babble_no_auth(self):
+        self.client.credentials()
         response = self.client.patch(
             reverse("babbles-detail", args=[self.babble1.id]),
             {"content": "Updated babble"},
@@ -129,17 +111,21 @@ class BabbleViewSetTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_destroy_babble_no_auth(self):
+        self.client.credentials()
         response = self.client.delete(reverse("babbles-detail", args=[self.babble1.id]))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_list_babbles_no_auth(self):
+        self.client.credentials()
         response = self.client.get(self.babble_url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_explore_babbles_no_auth(self):
+        self.client.credentials()
         response = self.client.get(reverse("babbles-explore"))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_profile_babbles_no_auth(self):
+        self.client.credentials()
         response = self.client.get(reverse("babbles-profile", args=[self.user2.id]))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
