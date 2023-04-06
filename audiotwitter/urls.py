@@ -41,7 +41,6 @@ router.register(r"babbles", BabbleViewSet, basename="babbles")
 router.register(
     r"babbles/(?P<babble_id>\d+)/comments", CommentViewSet, basename="comments"
 )
-router.register(r"follower", FollowerViewSet, basename="followers")
 router.register(r"auth", AuthViewSet, basename="auth")
 router.register(r"tags", TagViewSet, basename="tags")
 router.register(r"users/notifications", NotificationViewSet, basename="notifications")
@@ -76,6 +75,15 @@ urlpatterns += [
         "users/<int:user_id>/rebabbles",
         RebabbleViewSet.as_view({"get": "list"}),
         name="rebabbles_user",
+    ),
+]
+
+# followers
+urlpatterns += [
+    path(
+        "users/<int:user_id>/followers",
+        FollowerViewSet.as_view({"post": "create", "delete": "destroy"}),
+        name="followers",
     ),
 ]
 

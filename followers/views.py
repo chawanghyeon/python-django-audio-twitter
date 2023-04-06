@@ -20,32 +20,28 @@ class FollowerViewSet(viewsets.ModelViewSet):
     serializer_class = FollowerSerializer
 
     @transaction.atomic
-    def create(self, request: HttpRequest) -> Response:
-        following_id = request.data.get("following")
-
+    def create(self, request: HttpRequest, user_id: Optional[str] = None) -> Response:
         serializer = FollowerSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(user=request.user, following_id=following_id)
+        serializer.save(user=request.user, following_id=user_id)
 
         User.objects.filter(id=request.user.id).update(
             following_count=F("following_count") + 1
         )
-        User.objects.filter(id=following_id).update(
-            follower_count=F("follower_count") + 1
-        )
+        User.objects.filter(id=user_id).update(follower_count=F("follower_count") + 1)
         user_cache.delete(request.user.id)
 
         send_message_to_user(
-            request.user.id, following_id, f"{request.user.username} followed you"
+            request.user.id, user_id, f"{request.user.username} followed you"
         )
 
         return Response(status=status.HTTP_201_CREATED)
 
     @transaction.atomic
-    def destroy(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
-        Follower.objects.filter(user=request.user, following=pk).delete()
+    def destroy(self, request: HttpRequest, user_id: Optional[str] = None) -> Response:
+        Follower.objects.filter(user=request.user, following=user_id).delete()
 
-        User.objects.filter(id=pk).update(follower_count=F("follower_count") - 1)
+        User.objects.filter(id=user_id).update(follower_count=F("follower_count") - 1)
         User.objects.filter(id=request.user.id).update(
             following_count=F("following_count") - 1
         )
