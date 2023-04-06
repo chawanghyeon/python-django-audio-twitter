@@ -43,7 +43,7 @@ router.register(
 )
 router.register(r"follower", FollowerViewSet, basename="follower")
 router.register(r"auth", AuthViewSet, basename="auth")
-router.register(r"tags", TagViewSet, basename="tag")
+router.register(r"tags", TagViewSet, basename="tags")
 router.register(r"users/notifications", NotificationViewSet, basename="notifications")
 
 urlpatterns = [

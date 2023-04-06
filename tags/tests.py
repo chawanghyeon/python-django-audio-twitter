@@ -21,7 +21,7 @@ class TagViewSetTestCase(APITestCase):
 
     def test_retrieve_tag(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.token}")
-        response = self.client.get(reverse("tag-detail", args=[self.tag.text]))
+        response = self.client.get(reverse("tags-detail", args=[self.tag.text]))
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 1)
@@ -33,16 +33,16 @@ class TagViewSetTestCase(APITestCase):
 
     def test_retrieve_tag_not_found(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.token}")
-        response = self.client.get(reverse("tag-detail", args=["notfound"]))
+        response = self.client.get(reverse("tags-detail", args=["notfound"]))
 
         self.assertEqual(len(response.data["results"]), 0)
 
     def test_retrieve_tag_no_auth(self):
-        response = self.client.get(reverse("tag-detail", args=[self.tag.text]))
+        response = self.client.get(reverse("tags-detail", args=[self.tag.text]))
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_retrieve_tag_not_found_no_auth(self):
-        response = self.client.get(reverse("tag-detail", args=[self.tag.text]))
+        response = self.client.get(reverse("tags-detail", args=[self.tag.text]))
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
