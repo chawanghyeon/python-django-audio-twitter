@@ -57,7 +57,7 @@ class CommentViewSetTestCase(APITestCase):
         self.assertEqual(len(response.data["results"]), 1)
         self.assertEqual(
             response.data["results"][0]["audio"],
-            "http://testserver" + self.comment1.audio.url,
+            self.comment1.audio.url,
         )
 
     def test_partial_update_comment(self):
