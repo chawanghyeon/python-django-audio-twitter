@@ -39,7 +39,7 @@ router = DefaultRouter(trailing_slash=False)
 router.register(r"user", UserViewSet, basename="user")
 router.register(r"babbles", BabbleViewSet, basename="babbles")
 router.register(
-    r"babbles/(?P<babble_id>\d+)/comments", CommentViewSet, basename="comment"
+    r"babbles/(?P<babble_id>\d+)/comments", CommentViewSet, basename="comments"
 )
 router.register(r"follower", FollowerViewSet, basename="follower")
 router.register(r"auth", AuthViewSet, basename="auth")
