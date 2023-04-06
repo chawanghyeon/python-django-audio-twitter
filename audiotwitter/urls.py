@@ -37,7 +37,7 @@ from users.views import UserViewSet
 
 router = DefaultRouter(trailing_slash=False)
 router.register(r"user", UserViewSet, basename="user")
-router.register(r"babble", BabbleViewSet, basename="babble")
+router.register(r"babbles", BabbleViewSet, basename="babbles")
 router.register(
     r"babbles/(?P<babble_id>\d+)/comments", CommentViewSet, basename="comment"
 )
