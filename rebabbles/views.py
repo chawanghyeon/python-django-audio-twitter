@@ -30,8 +30,7 @@ class RebabbleViewSet(viewsets.ModelViewSet):
     serializer_class = RebabbleSerializer
 
     @transaction.atomic
-    def create(self, request: HttpRequest) -> Response:
-        babble_id = request.data.get("babble")
+    def create(self, request: HttpRequest, babble_id: Optional[str] = None) -> Response:
         babble = Babble.objects.get_or_404(id=babble_id)
 
         Rebabble.objects.create(user=request.user, babble=babble)
@@ -51,8 +50,10 @@ class RebabbleViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_201_CREATED)
 
     @transaction.atomic
-    def destroy(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
-        babble_id = int(pk)
+    def destroy(
+        self, request: HttpRequest, babble_id: Optional[str] = None
+    ) -> Response:
+        babble_id = int(babble_id)
         Rebabble.objects.filter(user=request.user, babble=babble_id).delete()
         Babble.objects.filter(id=babble_id).update(
             rebabble_count=F("rebabble_count") - 1
@@ -63,8 +64,8 @@ class RebabbleViewSet(viewsets.ModelViewSet):
 
         return Response(status=status.HTTP_200_OK)
 
-    def retrieve(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
-        user = get_user(request, pk)
+    def list(self, request: HttpRequest, user_id: Optional[str] = None) -> Response:
+        user = get_user(request, user_id)
         pagenator = CursorPagination()
         query = Babble.objects.filter(rebabble__user=user)
         query = pagenator.paginate_queryset(query, request)
