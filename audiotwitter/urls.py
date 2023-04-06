@@ -44,7 +44,7 @@ router.register(
 router.register(r"follower", FollowerViewSet, basename="follower")
 router.register(r"auth", AuthViewSet, basename="auth")
 router.register(r"tags", TagViewSet, basename="tag")
-router.register(r"users/notifications", NotificationViewSet, basename="notification")
+router.register(r"users/notifications", NotificationViewSet, basename="notifications")
 
 urlpatterns = [
     path("admin/", admin.site.urls),
