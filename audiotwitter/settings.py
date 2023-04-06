@@ -272,9 +272,5 @@ LOGGING = {
             "handlers": ["logstash", "console"],
             "level": "INFO",
         },
-        "django.db.backends": {
-            "handlers": ["console"],
-            "level": "DEBUG",
-        },
     },
 }

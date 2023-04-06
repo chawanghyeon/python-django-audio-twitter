@@ -38,7 +38,9 @@ from users.views import UserViewSet
 router = DefaultRouter()
 router.register(r"user", UserViewSet, basename="user")
 router.register(r"babble", BabbleViewSet, basename="babble")
-router.register(r"comment", CommentViewSet, basename="comment")
+router.register(
+    r"babble/(?P<babble_id>\d+)/comment", CommentViewSet, basename="comment"
+)
 router.register(r"follower", FollowerViewSet, basename="follower")
 router.register(r"like", LikeViewSet, basename="like")
 router.register(r"auth", AuthViewSet, basename="auth")

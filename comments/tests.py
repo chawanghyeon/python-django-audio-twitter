@@ -43,7 +43,7 @@ class CommentViewSetTestCase(APITestCase):
         self.babble1.comment_count = 1
         self.babble1.save()
 
-        self.comment_url = reverse("comment-list")
+        self.comment_url = reverse("comment-list", args=[self.babble1.id])
 
         self.user1_token = RefreshToken.for_user(self.user1)
         self.user2_token = RefreshToken.for_user(self.user2)
@@ -53,7 +53,7 @@ class CommentViewSetTestCase(APITestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}"
         )
         with open("test.mp3", "rb") as test_audio_file:
-            data = {"babble": self.babble1.id, "audio": test_audio_file}
+            data = {"audio": test_audio_file}
             response = self.client.post(self.comment_url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Comment.objects.filter(user=self.user1).count(), 2)
@@ -64,10 +64,13 @@ class CommentViewSetTestCase(APITestCase):
         self.client.credentials(
             HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}"
         )
-        response = self.client.get(reverse("comment-detail", args=[self.babble1.id]))
+        response = self.client.get(reverse("comment-list", args=[self.babble1.id]))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 1)
-        self.assertEqual(response.data["results"][0]["audio"], self.comment1.audio.url)
+        self.assertEqual(
+            response.data["results"][0]["audio"],
+            "http://testserver" + self.comment1.audio.url,
+        )
 
     def test_partial_update_comment(self):
         self.client.credentials(
@@ -76,7 +79,7 @@ class CommentViewSetTestCase(APITestCase):
         data = {"audio": self.test_audio_file2}
         temp = self.comment1.audio
         response = self.client.patch(
-            reverse("comment-detail", args=[self.comment1.id]), data
+            reverse("comment-detail", args=[self.babble1.id, self.comment1.id]), data
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertNotEqual(response.data["audio"], temp)
@@ -86,7 +89,7 @@ class CommentViewSetTestCase(APITestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}"
         )
         response = self.client.delete(
-            reverse("comment-detail", args=[self.comment1.id])
+            reverse("comment-detail", args=[self.babble1.id, self.comment1.id])
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(Comment.objects.filter(id=self.comment1.id).exists())
@@ -97,18 +100,18 @@ class CommentViewSetTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_retrieve_comments_no_auth(self):
-        response = self.client.get(reverse("comment-detail", args=[self.babble1.id]))
+        response = self.client.get(reverse("comment-list", args=[self.babble1.id]))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_partial_update_comment_no_auth(self):
         data = {"audio": self.test_audio_file2}
         response = self.client.patch(
-            reverse("comment-detail", args=[self.comment1.id]), data
+            reverse("comment-detail", args=[self.babble1.id, self.comment1.id]), data
         )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_destroy_comment_no_auth(self):
         response = self.client.delete(
-            reverse("comment-detail", args=[self.comment1.id])
+            reverse("comment-detail", args=[self.babble1.id, self.comment1.id])
         )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

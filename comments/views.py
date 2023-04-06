@@ -23,8 +23,7 @@ class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
 
     @transaction.atomic
-    def create(self, request: HttpRequest) -> Response:
-        babble_id = request.data.get("babble")
+    def create(self, request: HttpRequest, babble_id: Optional[str] = None) -> Response:
         babble = Babble.objects.get_or_404(id=babble_id)
 
         serializer = CommentSerializer(data=request.data)
@@ -46,10 +45,12 @@ class CommentViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
-    def retrieve(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
+    def retrieve(
+        self, request: HttpRequest, babble_id: Optional[str] = None
+    ) -> Response:
         pagenator = CursorPagination()
         pagenator.page_size = 7
-        babble = Babble.objects.get_or_404(id=pk)
+        babble = Babble.objects.get_or_404(id=babble_id)
         query = Comment.objects.filter(babble=babble)
         query = pagenator.paginate_queryset(query, request)
 
@@ -61,7 +62,10 @@ class CommentViewSet(viewsets.ModelViewSet):
         return pagenator.get_paginated_response(serializer.data)
 
     def partial_update(
-        self, request: HttpRequest, pk: Optional[str] = None
+        self,
+        request: HttpRequest,
+        babble_id: Optional[str] = None,
+        pk: Optional[str] = None,
     ) -> Response:
         comment = Comment.objects.get_or_404(id=pk)
 
@@ -73,8 +77,12 @@ class CommentViewSet(viewsets.ModelViewSet):
         return Response(CommentSerializer(comment).data, status=status.HTTP_200_OK)
 
     @transaction.atomic
-    def destroy(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
-        babble_id = request.data.get("babble")
+    def destroy(
+        self,
+        request: HttpRequest,
+        babble_id: Optional[str] = None,
+        pk: Optional[str] = None,
+    ) -> Response:
         Babble.objects.filter(id=babble_id).update(comment_count=F("comment_count") - 1)
         Comment.objects.filter(id=pk).delete()
 
