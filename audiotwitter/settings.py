@@ -226,22 +226,6 @@ if DEBUG:
         "querycount.middleware.QueryCountMiddleware",
     ]
 
-    # LOGGING = {
-    #     "version": 1,
-    #     "disable_existing_loggers": False,
-    #     "handlers": {
-    #         "console": {
-    #             "class": "logging.StreamHandler",
-    #         },
-    #     },
-    #     "loggers": {
-    #         "django.db.backends": {
-    #             "handlers": ["console"],
-    #             "level": "DEBUG",
-    #         },
-    #     },
-    # }
-
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -254,22 +238,15 @@ LOGGING = {
         "logstash": {
             "level": "INFO",
             "class": "logstash.TCPLogstashHandler",
-            "host": "localhost",  # Replace with the IP or hostname of your Logstash server
-            "port": 50000,  # This is the default port that Logstash listens on
+            "host": "localhost",
+            "port": 50000,
             "version": 1,
             "formatter": "json",
         },
-        "console": {
-            "class": "logging.StreamHandler",
-        },
     },
     "loggers": {
-        "django": {
-            "handlers": ["console"],
-            "level": "INFO",
-        },
         "": {
-            "handlers": ["logstash", "console"],
+            "handlers": ["logstash"],
             "level": "INFO",
         },
     },

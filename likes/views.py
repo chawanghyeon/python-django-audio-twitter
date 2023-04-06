@@ -28,18 +28,17 @@ user_cache = caches["default"]
 babble_cache = caches["second"]
 
 
-class LikeViewSet(viewsets.ModelViewSet):
+class LikeViewSet(viewsets.ViewSet):
     queryset = Like.objects.all()
     serializer_class = LikeSerializer
 
     @transaction.atomic
-    def create(self, request: HttpRequest) -> Response:
-        babble_id = request.data.get("babble")
+    def create(self, request: HttpRequest, babble_id: Optional[str] = None) -> Response:
         serializer = LikeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        babble = Babble.objects.get_or_404(id=babble_id)
-        serializer.save(babble=babble, user=request.user)
+        serializer.save(babble_id=babble_id, user=request.user)
 
+        babble = Babble.objects.get(id=babble_id)
         babble.like_count += 1
         babble.save()
 
@@ -55,19 +54,23 @@ class LikeViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_201_CREATED)
 
     @transaction.atomic
-    def destroy(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
-        pk = int(pk)
+    def destroy(
+        self,
+        request: HttpRequest,
+        babble_id: Optional[str] = None,
+    ) -> Response:
+        babble_id = int(babble_id)
 
-        Babble.objects.filter(id=pk).update(like_count=F("like_count") - 1)
-        Like.objects.filter(user=request.user, babble=pk).delete()
+        Babble.objects.filter(id=babble_id).update(like_count=F("like_count") - 1)
+        Like.objects.filter(user=request.user, babble=babble_id).delete()
 
-        update_user_cache(request.user.id, pk, "is_liked", False)
-        update_babble_cache(pk, "like_count", -1)
+        update_user_cache(request.user.id, babble_id, "is_liked", False)
+        update_babble_cache(babble_id, "like_count", -1)
 
         return Response(status=status.HTTP_200_OK)
 
-    def retrieve(self, request: HttpRequest, pk: Optional[str] = None) -> Response:
-        user = get_user(request, pk)
+    def list(self, request: HttpRequest, user_id: Optional[str] = None) -> Response:
+        user = get_user(request, user_id)
         pagenator = CursorPagination()
 
         query = Babble.objects.filter(like__user=user)

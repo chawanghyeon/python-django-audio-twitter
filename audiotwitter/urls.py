@@ -35,14 +35,13 @@ from rebabbles.views import RebabbleViewSet
 from tags.views import TagViewSet
 from users.views import UserViewSet
 
-router = DefaultRouter()
+router = DefaultRouter(trailing_slash=False)
 router.register(r"user", UserViewSet, basename="user")
 router.register(r"babble", BabbleViewSet, basename="babble")
 router.register(
     r"babble/(?P<babble_id>\d+)/comment", CommentViewSet, basename="comment"
 )
 router.register(r"follower", FollowerViewSet, basename="follower")
-router.register(r"like", LikeViewSet, basename="like")
 router.register(r"auth", AuthViewSet, basename="auth")
 router.register(r"tag", TagViewSet, basename="tag")
 router.register(r"rebabble", RebabbleViewSet, basename="rebabble")
@@ -51,6 +50,20 @@ router.register(r"notification", NotificationViewSet, basename="notification")
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include(router.urls)),
+]
+
+# likes
+urlpatterns += [
+    path(
+        "babbles/<int:babble_id>/likes",
+        LikeViewSet.as_view({"delete": "destroy", "post": "create"}),
+        name="likes",
+    ),
+    path(
+        "users/<int:user_id>/likes",
+        LikeViewSet.as_view({"get": "list"}),
+        name="likes_user",
+    ),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
