@@ -18,7 +18,7 @@ user_cache = caches["default"]
 babble_cache = caches["second"]
 
 
-class CommentViewSet(viewsets.ModelViewSet):
+class CommentViewSet(viewsets.ViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
 

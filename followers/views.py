@@ -15,7 +15,7 @@ from users.models import User
 user_cache = caches["default"]
 
 
-class FollowerViewSet(viewsets.ModelViewSet):
+class FollowerViewSet(viewsets.ViewSet):
     queryset = Follower.objects.all()
     serializer_class = FollowerSerializer
 

@@ -19,7 +19,7 @@ user_cache = caches["default"]
 babble_cache = caches["second"]
 
 
-class UserViewSet(viewsets.ModelViewSet):
+class UserViewSet(viewsets.ViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 

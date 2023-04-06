@@ -10,7 +10,7 @@ from users.models import User
 from users.serializers import UserSerializer
 
 
-class AuthViewSet(viewsets.GenericViewSet):
+class AuthViewSet(viewsets.ViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = tuple()

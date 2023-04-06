@@ -12,7 +12,7 @@ from tags.serializers import TagSerializer
 from tags.utils import check_liked, check_rebabbled
 
 
-class TagViewSet(viewsets.ModelViewSet):
+class TagViewSet(viewsets.ViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
 

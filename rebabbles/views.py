@@ -25,7 +25,7 @@ user_cache = caches["default"]
 babble_cache = caches["second"]
 
 
-class RebabbleViewSet(viewsets.ModelViewSet):
+class RebabbleViewSet(viewsets.ViewSet):
     queryset = Rebabble.objects.all()
     serializer_class = RebabbleSerializer
 

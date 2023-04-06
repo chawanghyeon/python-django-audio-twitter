@@ -6,7 +6,7 @@ from notifications.models import Notification
 from notifications.serializers import NotificationSerializer
 
 
-class NotificationViewSet(viewsets.ModelViewSet):
+class NotificationViewSet(viewsets.ViewSet):
     queryset = Notification.objects.all()
     serializer_class = NotificationSerializer
 

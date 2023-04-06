@@ -35,7 +35,7 @@ user_cache.clear()
 babble_cache.clear()
 
 
-class BabbleViewSet(viewsets.ModelViewSet):
+class BabbleViewSet(viewsets.ViewSet):
     queryset: BaseManager[Babble] = Babble.objects.all()
     serializer_class: Type[BabbleSerializer] = BabbleSerializer
 
