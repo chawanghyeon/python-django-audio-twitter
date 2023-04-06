@@ -11,12 +11,12 @@ from users.models import User
 
 class CommentViewSetTestCase(APITestCase):
     def setUp(self):
-        # Create users
         self.user1 = User.objects.create_user(
             username="user1", password="user1_password"
         )
-        self.user2 = User.objects.create_user(
-            username="user2", password="user2_password"
+        self.user1_token = RefreshToken.for_user(self.user1)
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}"
         )
 
         with open("test.mp3", "rb") as f:
@@ -32,9 +32,6 @@ class CommentViewSetTestCase(APITestCase):
         self.babble1 = Babble.objects.create(
             user=self.user1, audio=self.test_audio_file1
         )
-        self.babble2 = Babble.objects.create(
-            user=self.user2, audio=self.test_audio_file1
-        )
 
         self.comment1 = Comment.objects.create(
             user=self.user1, babble=self.babble1, audio=self.test_audio_file1
@@ -45,13 +42,7 @@ class CommentViewSetTestCase(APITestCase):
 
         self.comment_url = reverse("comment-list", args=[self.babble1.id])
 
-        self.user1_token = RefreshToken.for_user(self.user1)
-        self.user2_token = RefreshToken.for_user(self.user2)
-
     def test_create_comment(self):
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}"
-        )
         with open("test.mp3", "rb") as test_audio_file:
             data = {"audio": test_audio_file}
             response = self.client.post(self.comment_url, data)
@@ -61,9 +52,6 @@ class CommentViewSetTestCase(APITestCase):
         self.assertEqual(self.babble1.comment_count, 2)
 
     def test_retrieve_comments(self):
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}"
-        )
         response = self.client.get(reverse("comment-list", args=[self.babble1.id]))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 1)
@@ -73,21 +61,16 @@ class CommentViewSetTestCase(APITestCase):
         )
 
     def test_partial_update_comment(self):
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}"
-        )
         data = {"audio": self.test_audio_file2}
         temp = self.comment1.audio
         response = self.client.patch(
             reverse("comment-detail", args=[self.babble1.id, self.comment1.id]), data
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertNotEqual(response.data["audio"], temp)
+        print(response.data["audio"], temp.url)
+        self.assertNotEqual(response.data["audio"], temp.url)
 
     def test_destroy_comment(self):
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}"
-        )
         response = self.client.delete(
             reverse("comment-detail", args=[self.babble1.id, self.comment1.id])
         )
@@ -95,15 +78,18 @@ class CommentViewSetTestCase(APITestCase):
         self.assertFalse(Comment.objects.filter(id=self.comment1.id).exists())
 
     def test_create_comment_no_auth(self):
+        self.client.credentials()
         data = {"babble": self.babble1.id, "audio": self.test_audio_file1}
         response = self.client.post(self.comment_url, data)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_retrieve_comments_no_auth(self):
+        self.client.credentials()
         response = self.client.get(reverse("comment-list", args=[self.babble1.id]))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_partial_update_comment_no_auth(self):
+        self.client.credentials()
         data = {"audio": self.test_audio_file2}
         response = self.client.patch(
             reverse("comment-detail", args=[self.babble1.id, self.comment1.id]), data
@@ -111,6 +97,7 @@ class CommentViewSetTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_destroy_comment_no_auth(self):
+        self.client.credentials()
         response = self.client.delete(
             reverse("comment-detail", args=[self.babble1.id, self.comment1.id])
         )
