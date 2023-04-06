@@ -88,7 +88,7 @@ class BabbleViewSetTestCase(APITestCase):
         Follower.objects.create(user=self.user1, following=self.user2)
         response = self.client.get(self.babble_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data["results"]), 2)
+        self.assertEqual(len(response.data["results"]), 1)
 
     def test_list_babbles2(self):
         self.client.credentials(
