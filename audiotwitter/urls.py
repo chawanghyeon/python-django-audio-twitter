@@ -36,6 +36,7 @@ from tags.views import TagViewSet
 from users.views import UserViewSet
 
 router = DefaultRouter(trailing_slash=False)
+router.register(r"users/notifications", NotificationViewSet, basename="notifications")
 router.register(r"users", UserViewSet, basename="users")
 router.register(r"babbles", BabbleViewSet, basename="babbles")
 router.register(
@@ -43,7 +44,6 @@ router.register(
 )
 router.register(r"auth", AuthViewSet, basename="auth")
 router.register(r"tags", TagViewSet, basename="tags")
-router.register(r"users/notifications", NotificationViewSet, basename="notifications")
 
 urlpatterns = [
     path("admin/", admin.site.urls),
