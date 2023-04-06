@@ -41,7 +41,7 @@ router.register(r"babbles", BabbleViewSet, basename="babbles")
 router.register(
     r"babbles/(?P<babble_id>\d+)/comments", CommentViewSet, basename="comments"
 )
-router.register(r"follower", FollowerViewSet, basename="follower")
+router.register(r"follower", FollowerViewSet, basename="followers")
 router.register(r"auth", AuthViewSet, basename="auth")
 router.register(r"tags", TagViewSet, basename="tags")
 router.register(r"users/notifications", NotificationViewSet, basename="notifications")

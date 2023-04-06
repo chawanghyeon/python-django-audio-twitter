@@ -16,14 +16,13 @@ class FollowerViewSetTestCase(APITestCase):
         self.user2 = User.objects.create_user(
             username="user2", password="user2_password"
         )
-        self.follow_url = reverse("follower-list")
+        self.follow_url = reverse("followers-list")
         self.user1_token = RefreshToken.for_user(self.user1)
-        self.user2_token = RefreshToken.for_user(self.user2)
-
-    def test_create_follower(self):
         self.client.credentials(
             HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}"
         )
+
+    def test_create_follower(self):
         response = self.client.post(
             self.follow_url,
             {"following": self.user2.id},
@@ -38,12 +37,9 @@ class FollowerViewSetTestCase(APITestCase):
         self.assertEqual(self.user2.follower_count, 1)
 
     def test_destroy_follower(self):
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {self.user1_token.access_token}"
-        )
         self.test_create_follower()
         response = self.client.delete(
-            reverse("follower-detail", args=[self.user2.id]),
+            reverse("followers-detail", args=[self.user2.id]),
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(
@@ -55,10 +51,12 @@ class FollowerViewSetTestCase(APITestCase):
         self.assertEqual(self.user2.follower_count, 0)
 
     def test_create_follower_no_auth(self):
+        self.client.credentials()
         response = self.client.post(self.follow_url, {"following": self.user2.id})
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_destroy_follower_no_auth(self):
+        self.client.credentials()
         follower = Follower.objects.create(user=self.user1, following=self.user2)
-        response = self.client.delete(reverse("follower-detail", args=[follower.id]))
+        response = self.client.delete(reverse("followers-detail", args=[follower.id]))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
