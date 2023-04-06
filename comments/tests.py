@@ -67,7 +67,6 @@ class CommentViewSetTestCase(APITestCase):
             reverse("comment-detail", args=[self.babble1.id, self.comment1.id]), data
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        print(response.data["audio"], temp.url)
         self.assertNotEqual(response.data["audio"], temp.url)
 
     def test_destroy_comment(self):
