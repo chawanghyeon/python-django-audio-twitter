@@ -15,5 +15,5 @@ class Comment(models.Model):
     modified = models.DateTimeField(auto_now=True, blank=True)
     objects = DefaultManager()
 
-    def __unicode__(self):
+    def __str__(self):
         return self.user.first_name

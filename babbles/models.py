@@ -18,5 +18,5 @@ class Babble(models.Model):
     rebabble_count = models.IntegerField(default=0, blank=True, null=True)
     objects = DefaultManager()
 
-    def __unicode__(self):
+    def __str__(self):
         return self.user.first_name

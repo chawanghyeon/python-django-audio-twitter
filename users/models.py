@@ -20,9 +20,6 @@ class User(AbstractUser):
     created = models.DateTimeField(auto_now_add=True)
     objects = PrivateUserManager()
 
-    def __unicode__(self):
-        return self.first_name
-
     def __str__(self):
         return self.first_name
 

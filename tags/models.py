@@ -8,8 +8,5 @@ class Tag(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     objects = TagManager()
 
-    def __unicode__(self):
-        return self.text
-
     def __str__(self):
         return self.text

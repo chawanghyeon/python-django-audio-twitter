@@ -12,5 +12,5 @@ class Rebabble(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     objects = DefaultManager()
 
-    def __unicode__(self):
+    def __str__(self):
         return self.user.first_name + " rebabbles " + str(self.babble.id)
